@@ -199,6 +199,11 @@ export const IntroPanel = ({ state, size, onJump }) => {
                   <div style={{ fontSize: "11px", color: colors.textMuted, marginTop: "2px" }}>
                     {p?.name}{a.price > 0 ? ` · ${a.price} €/pers` : " · gratis"}
                   </div>
+                  {a.lowMobilityOk === false && (
+                    <div style={{ marginTop: "4px", fontSize: "10.5px", fontWeight: 700, color: colors.dangerText, background: colors.dangerSoft, border: `1px solid ${colors.danger}`, borderRadius: radii.pill, padding: "1px 7px", display: "inline-block" }}>
+                      ⚠️ Movilidad reducida
+                    </div>
+                  )}
                 </div>
               </article>
             );

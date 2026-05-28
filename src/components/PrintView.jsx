@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { colors, fonts, radii } from "../styles/tokens.js";
+import { colors, fonts } from "../styles/tokens.js";
 import { baseById } from "../data/bases.js";
 import { ACTIVITIES, activityById } from "../data/activities.js";
 import { placeById } from "../data/places.js";
-import { AUTO_ITEMS, CATEGORIES } from "../data/checklistItems.js";
+import { CATEGORIES } from "../data/checklistItems.js";
 import { computeBudget, BUDGET_DEFAULTS } from "../utils/budget.js";
 import { formatDate, formatDow } from "../utils/dates.js";
 import { useChecklist } from "../hooks/useChecklist.js";
@@ -84,7 +84,13 @@ export const PrintView = ({ state }) => {
                   if (!a) return null;
                   return (
                     <li key={id}>
+                      {a.lowMobilityOk === false && <strong style={{ color: colors.dangerText }}>⚠️ </strong>}
                       {a.name} <span style={{ color: colors.textMuted }}>— {placeById(a.placeId)?.name} · {fmtDur(a.durationMin)}{a.price > 0 ? ` · ${a.price} €` : ""}</span>
+                      {a.lowMobilityOk === false && a.splitOption && (
+                        <div style={{ fontSize: "11px", color: colors.textMuted, fontStyle: "italic", marginLeft: "10px" }}>
+                          ✂️ {a.splitOption}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

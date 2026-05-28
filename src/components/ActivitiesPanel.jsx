@@ -144,15 +144,24 @@ export const ActivitiesPanel = ({ state, size }) => {
 
                 <p style={{ fontSize: "13px", color: colors.textBody, lineHeight: 1.5, margin: 0 }}>{a.desc}</p>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
                   <Chip bg={colors.bgPanel} fg={colors.textMuted}>🕐 {a.hours}</Chip>
                   <Chip bg={colors.bgPanel} fg={colors.textMuted}>⏱️ {a.durationMin >= 60 ? `${Math.round((a.durationMin / 60) * 10) / 10} h` : `${a.durationMin} min`}</Chip>
-                  <Chip
-                    bg={am.color === "success" ? colors.successSoft : am.color === "warning" ? colors.warningSoft : colors.dangerSoft}
-                    fg={am.color === "success" ? colors.successText : am.color === "warning" ? colors.warningText : colors.dangerText}
+                  {/* Access level: discreet round icon badge with tooltip. */}
+                  <span
+                    title={am.label}
+                    aria-label={`Accesibilidad: ${am.label}`}
+                    style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: "22px", height: "22px", borderRadius: "50%",
+                      background: am.color === "success" ? colors.successSoft : am.color === "warning" ? colors.warningSoft : colors.dangerSoft,
+                      color: am.color === "success" ? colors.successText : am.color === "warning" ? colors.warningText : colors.dangerText,
+                      border: `1px solid ${am.color === "success" ? colors.success : am.color === "warning" ? colors.warning : colors.danger}`,
+                      fontSize: "12px",
+                    }}
                   >
-                    {am.glyph} {am.label}
-                  </Chip>
+                    {am.glyph}
+                  </span>
                   {a.booking && <Chip bg={colors.warningSoft} fg={colors.warningText}>📞 Reservar</Chip>}
                 </div>
 
@@ -161,6 +170,32 @@ export const ActivitiesPanel = ({ state, size }) => {
                 )}
                 {a.bookingNote && (
                   <div style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.45 }}>ℹ️ {a.bookingNote}</div>
+                )}
+
+                {a.lowMobilityOk === false && (
+                  <div
+                    role="note"
+                    style={{
+                      background: colors.dangerSoft,
+                      border: `1px solid ${colors.danger}`,
+                      borderRadius: radii.md,
+                      padding: "8px 11px",
+                      fontSize: "12.5px",
+                      color: colors.dangerText,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <strong>⚠️ No apta para movilidad reducida.</strong>
+                    {a.splitOption && (
+                      <details style={{ marginTop: "4px" }}>
+                        <summary style={{ cursor: "pointer", listStyle: "none", color: colors.dangerText, fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <span aria-hidden="true" className="chevron" style={{ display: "inline-block", transition: "transform 0.18s" }}>▾</span>
+                          ✂️ Posible dividiendo al grupo
+                        </summary>
+                        <div style={{ marginTop: "5px", color: colors.text, fontSize: "12px" }}>{a.splitOption}</div>
+                      </details>
+                    )}
+                  </div>
                 )}
 
                 {/* Per-member votes */}

@@ -70,6 +70,10 @@ export const ACTIVITIES = [
       "6 €/persona.",
     lat: 43.298,
     lng: -1.576,
+    lowMobilityOk: false,
+    splitOption:
+      "Mientras una parte hace la visita, quien tenga movilidad limitada puede esperar " +
+      "en el centro de Sare (2,4 km, casco llano con frontón y cafés).",
   },
   {
     id: "iglesia_sare",
@@ -117,6 +121,11 @@ export const ACTIVITIES = [
       "Sendero que recorre Sare, Ainhoa (Francia) y Zugarramurdi, Urdax " +
       "(Navarra): el Valle de Xareta, tierra de brujas y contrabandistas, con " +
       "sus ponis azules (pottoks).",
+    lowMobilityOk: false,
+    splitOption:
+      "El sendero no tiene alternativa accesible. Mientras el grupo camina, quien lo " +
+      "necesite puede quedarse en el centro de Zugarramurdi o Ainhoa (pueblos llanos " +
+      "con cafés y plaza) y reunirse al final.",
   },
   {
     id: "cuevas_zugarramurdi",
@@ -133,6 +142,11 @@ export const ACTIVITIES = [
       "La cueva de los akelarres. Junto al Museo de las Brujas. Una escapada " +
       "fácil al lado navarro del Valle de Xareta.",
     img: `${WIKI}/c/ca/Cuevas_de_Zugarramurdi.jpg/500px-Cuevas_de_Zugarramurdi.jpg`,
+    lowMobilityOk: false,
+    splitOption:
+      "El descenso a la cueva tiene desnivel. Alternativa para quien lo necesite: " +
+      "quedarse en el pueblo de Zugarramurdi (llano) y visitar el Museo de las Brujas " +
+      "y los cafés de la plaza mientras el resto baja a la cueva.",
   },
   {
     id: "espelette_pueblo",
@@ -331,6 +345,11 @@ export const ACTIVITIES = [
     desc:
       "Grutas prehistóricas con grabados, arte rupestre y concreciones. La gran " +
       "baza cultural del interior, junto a la base de Chez Lucas.",
+    lowMobilityOk: false,
+    splitOption:
+      "El recorrido subterráneo tiene escalones. Alternativa para quien lo necesite: " +
+      "esperar en Cambo-les-Bains (15 min, villa termal llana con jardines de Villa " +
+      "Arnaga) o en La Bastide-Clairence (12 min, casco llano).",
   },
   {
     id: "hondarribia_casco",
@@ -362,6 +381,11 @@ export const ACTIVITIES = [
     desc:
       "Roca legendaria horadada (la abrió Roldán de una patada, según la leyenda) " +
       "sobre el Nive, en el pueblo de las cerezas. Paseo verde y fresco.",
+    lowMobilityOk: false,
+    splitOption:
+      "El acceso al Pas de Roland es por sendero y terreno irregular. Alternativa: " +
+      "mientras unos van, quien lo necesite puede quedarse en el centro de Itxassou " +
+      "(plaza, iglesia con galerías de madera, frontón y cafés; todo llano).",
   },
 ];
 

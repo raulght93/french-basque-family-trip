@@ -177,7 +177,18 @@ export const ItineraryPanel = ({ state, size }) => {
                         </span>
                         <span aria-hidden="true" style={{ fontSize: "16px" }}>{tm.glyph}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "13.5px", fontWeight: 600, color: colors.text }}>{a.name}</div>
+                          <div style={{ fontSize: "13.5px", fontWeight: 600, color: colors.text, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                            <span>{a.name}</span>
+                            {a.lowMobilityOk === false && (
+                              <span
+                                title={a.splitOption ? `Movilidad reducida: ${a.splitOption}` : "No apta para movilidad reducida"}
+                                aria-label="No apta para movilidad reducida"
+                                style={{ fontSize: "10.5px", fontWeight: 700, color: colors.dangerText, background: colors.dangerSoft, border: `1px solid ${colors.danger}`, borderRadius: radii.pill, padding: "0 6px" }}
+                              >
+                                ⚠️
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: "11.5px", color: colors.textMuted }}>
                             {placeById(a.placeId)?.name} · {fmtDur(a.durationMin)}{a.price > 0 ? ` · ${a.price} €` : ""}
                           </div>
