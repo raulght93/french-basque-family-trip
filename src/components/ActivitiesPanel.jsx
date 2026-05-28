@@ -121,7 +121,7 @@ export const ActivitiesPanel = ({ state, size }) => {
               }}
             >
               <div style={{ height: "140px", position: "relative" }}>
-                <Img src={img} alt={a.name} zone={place?.zone} />
+                <Img src={img} alt={a.name} zone={place?.zone} caption={`${a.name} — ${a.desc}`} />
                 <span style={{
                   position: "absolute", top: "8px", right: "8px",
                   background: a.price > 0 ? colors.accent : colors.green,

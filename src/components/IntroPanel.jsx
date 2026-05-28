@@ -1,6 +1,9 @@
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { PLACES, placeById, ZONE_GRADIENT, ZONE_LABEL } from "../data/places.js";
-import { ACTIVITIES, activityById, TYPE_META } from "../data/activities.js";
+import { activityById, TYPE_META } from "../data/activities.js";
+import { FOODS } from "../data/food.js";
+import { PHRASES_EU, PHRASES_FR } from "../data/phrases.js";
+import { LINK_GROUPS } from "../data/links.js";
 import { Img } from "./Img.jsx";
 
 // Welcome view: context of the region, villages, must-sees, practical info.
@@ -58,11 +61,11 @@ export const IntroPanel = ({ state, size, onJump }) => {
         }}
       >
         <div style={{ position: "absolute", inset: 0 }}>
-          <Img src={heroPlace?.img} alt="País Vasco francés" zone="montana" eager />
+          <Img src={heroPlace?.img} alt="País Vasco francés" zone="montana" eager zoomable={false} />
         </div>
         <div
           style={{
-            position: "absolute", inset: 0,
+            position: "absolute", inset: 0, pointerEvents: "none",
             background: "linear-gradient(180deg, rgba(15,30,25,0.15) 0%, rgba(15,30,25,0.75) 100%)",
           }}
         />
@@ -161,7 +164,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
               {placesByZone[group.id].map((p) => (
                 <article key={p.id} style={card}>
                   <div style={{ height: "120px" }}>
-                    <Img src={p.img} alt={p.name} zone={p.zone} />
+                    <Img src={p.img} alt={p.name} zone={p.zone} caption={`${p.name} — ${p.desc}`} />
                   </div>
                   <div style={{ padding: "10px 12px 12px" }}>
                     <div style={{ fontFamily: fonts.serif, fontSize: "17px", color: colors.text, lineHeight: 1.15 }}>{p.name}</div>
@@ -187,7 +190,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
             return (
               <article key={id} style={card}>
                 <div style={{ height: "110px" }}>
-                  <Img src={a.img || p?.img} alt={a.name} zone={p?.zone} />
+                  <Img src={a.img || p?.img} alt={a.name} zone={p?.zone} caption={`${a.name} — ${a.desc}`} />
                 </div>
                 <div style={{ padding: "9px 11px 11px" }}>
                   <div style={{ fontFamily: fonts.sans, fontSize: "13px", fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>
@@ -202,6 +205,91 @@ export const IntroPanel = ({ state, size, onJump }) => {
           })}
         </div>
       </section>
+
+      {/* Cocina vasca — open by default */}
+      <details open style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "18px" }}>
+        <summary style={summaryStyle(size)}>
+          <span>🍽️ Cocina vasca</span>
+          <span aria-hidden="true" className="chevron" style={chevronStyle}>▾</span>
+        </summary>
+        <p style={{ fontSize: "13px", color: colors.textMuted, margin: "8px 0 12px", lineHeight: 1.5 }}>
+          Lo que no podéis dejar de probar. Pulsa una foto para ampliarla.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr 1fr" : size.isDesktop ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: "10px" }}>
+          {FOODS.map((f) => (
+            <article key={f.id} style={card}>
+              <div style={{ height: "110px" }}>
+                <Img src={f.img} alt={f.name} caption={`${f.name} — ${f.desc}`} />
+              </div>
+              <div style={{ padding: "9px 11px 11px" }}>
+                <div style={{ fontFamily: fonts.serif, fontSize: "15.5px", color: colors.text, lineHeight: 1.15 }}>{f.name}</div>
+                <p style={{ fontSize: "12px", color: colors.textBody, lineHeight: 1.45, marginTop: "3px" }}>{f.desc}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </details>
+
+      {/* Frases útiles — collapsed by default */}
+      <details style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "18px" }}>
+        <summary style={summaryStyle(size)}>
+          <span>🗣️ Frases útiles</span>
+          <span aria-hidden="true" className="chevron" style={chevronStyle}>▾</span>
+        </summary>
+        <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr" : "1fr", gap: "18px", marginTop: "12px" }}>
+          <div>
+            <h3 style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "8px" }}>
+              🪶 Euskera (las que abren puertas)
+            </h3>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "5px", fontFamily: fonts.sans, fontSize: "13px", color: colors.textBody, lineHeight: 1.5 }}>
+              {PHRASES_EU.map((p) => (
+                <li key={p.eu}><strong style={{ color: colors.text }}>{p.eu}</strong> <span style={{ color: colors.textMuted }}>— {p.es}</span></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "8px" }}>
+              🇫🇷 Français (lo básico)
+            </h3>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "5px", fontFamily: fonts.sans, fontSize: "13px", color: colors.textBody, lineHeight: 1.5 }}>
+              {PHRASES_FR.map((p) => (
+                <li key={p.fr}><strong style={{ color: colors.text }}>{p.fr}</strong> <span style={{ color: colors.textMuted }}>— {p.es}</span></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </details>
+
+      {/* Enlaces útiles — collapsed by default */}
+      <details style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "22px" }}>
+        <summary style={summaryStyle(size)}>
+          <span>🔗 Enlaces útiles</span>
+          <span aria-hidden="true" className="chevron" style={chevronStyle}>▾</span>
+        </summary>
+        <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr 1fr" : size.isMobile ? "1fr" : "1fr 1fr", gap: "16px", marginTop: "12px" }}>
+          {LINK_GROUPS.map((g) => (
+            <div key={g.id}>
+              <h3 style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "8px" }}>
+                {g.glyph} {g.title}
+              </h3>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "5px" }}>
+                {g.items.map((i) => (
+                  <li key={i.url}>
+                    <a
+                      href={i.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      style={{ fontFamily: fonts.sans, fontSize: "13px", color: colors.accent, textDecoration: "none", borderBottom: `1px dotted ${colors.accentBorder}` }}
+                    >
+                      {i.label} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </details>
 
       {/* Practical / before you go */}
       <section style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "22px" }}>
@@ -240,6 +328,29 @@ const h2Style = (size) => ({
   color: colors.text,
   margin: "8px 0 12px",
 });
+
+// <summary> styled as a clickable h2 with a rotating chevron on the right.
+// The chevron's rotation is handled by the global CSS rule in tokens.js
+// (`details[open] > summary span[aria-hidden="true"].chevron`).
+const summaryStyle = (size) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  cursor: "pointer",
+  listStyle: "none",
+  fontFamily: fonts.serif,
+  fontSize: size.isMobile ? "22px" : "26px",
+  color: colors.text,
+  fontWeight: 700,
+  lineHeight: 1.1,
+});
+
+const chevronStyle = {
+  display: "inline-block",
+  fontSize: "18px",
+  color: colors.accent,
+  transition: "transform 0.18s",
+};
 
 const ctaPrimary = {
   background: colors.accent,

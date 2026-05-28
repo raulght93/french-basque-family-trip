@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { ZONE_GRADIENT } from "../data/places.js";
+import { useLightbox } from "./Lightbox.jsx";
 
-// Image with a graceful gradient fallback. If `src` is missing or 404s, we
-// render a tinted gradient (by `zone`) instead of a broken-image icon.
-export const Img = ({ src, alt, zone = "montana", style, eager = false }) => {
+// Image with a graceful gradient fallback and optional click-to-zoom.
+// - `src` missing or 404 → render a tinted gradient by `zone`.
+// - `zoomable` (default true when there's a src) wraps the image in a button
+//   that opens the global lightbox with an upscaled version + caption.
+export const Img = ({ src, alt, zone = "montana", style, eager = false, zoomable = true, caption }) => {
   const [failed, setFailed] = useState(false);
+  const { open } = useLightbox();
   const base = {
     display: "block",
     width: "100%",
@@ -23,7 +27,7 @@ export const Img = ({ src, alt, zone = "montana", style, eager = false }) => {
     );
   }
 
-  return (
+  const img = (
     <img
       src={src}
       alt={alt}
@@ -31,6 +35,23 @@ export const Img = ({ src, alt, zone = "montana", style, eager = false }) => {
       onError={() => setFailed(true)}
       style={base}
     />
+  );
+
+  if (!zoomable) return img;
+
+  return (
+    <button
+      type="button"
+      data-print="hide"
+      onClick={() => open(src, alt, caption || alt)}
+      aria-label={`Ampliar imagen: ${alt}`}
+      style={{
+        display: "block", width: "100%", height: "100%", padding: 0, margin: 0,
+        background: "none", border: "none", cursor: "zoom-in",
+      }}
+    >
+      {img}
+    </button>
   );
 };
 

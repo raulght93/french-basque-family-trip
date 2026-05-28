@@ -15,6 +15,7 @@ import { BudgetPanel } from "./components/BudgetPanel.jsx";
 import { PrintView } from "./components/PrintView.jsx";
 import { IntroPanel } from "./components/IntroPanel.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
+import { LightboxProvider } from "./components/Lightbox.jsx";
 
 // RegionMap pulls in Leaflet (~150 KB) — keep it off the critical path.
 const RegionMap = lazy(() => import("./components/RegionMap.jsx"));
@@ -60,6 +61,7 @@ export default function BasqueGuide() {
   };
 
   return (
+    <LightboxProvider>
     <div style={{ background: colors.bg, minHeight: "100vh", color: colors.text }}>
       <Header state={state} size={size} />
       <ActionsBar state={state} onPrint={triggerPrint} size={size} />
@@ -82,5 +84,6 @@ export default function BasqueGuide() {
         Guía familiar del País Vasco francés · hecha con cariño · los datos de mapa son © OpenStreetMap y CARTO.
       </footer>
     </div>
+    </LightboxProvider>
   );
 }

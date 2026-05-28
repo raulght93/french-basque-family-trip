@@ -167,6 +167,21 @@ día (↑/↓ en Itinerary) · nombre de viaje fijo · atajo de noches en el Hea
   rápido en móvil (donde el DnD nativo no va).
 - **Nombres reales por defecto** de los 8 participantes (editables).
 
+✅ Hecho 2026-05-28 (mejoras UX):
+- **Lightbox global** (`components/Lightbox.jsx` + `LightboxProvider`): cualquier
+  `<Img>` con `src` es ampliable por defecto (cursor `zoom-in`, abre overlay
+  con foto + caption, Esc / clic fuera para cerrar). Los thumbnails Wikimedia
+  500px se reescriben a 1280px en la URL para la versión ampliada (regla
+  CLAUDE).
+- **Cocina vasca** (`data/food.js`, 10 platos): tarjetas con foto en IntroPanel.
+- **Frases útiles** (`data/phrases.js`): euskera + français básico.
+- **Enlaces útiles** (`data/links.js`): turismo, reservas (La Rhune, cuevas,
+  Arnaga), meteo, tráfico, cultura. Agrupados.
+- **Colapsables `<details>`** en IntroPanel: Cocina (abierto), Frases (cerrado),
+  Enlaces (cerrado). Chevron rota vía CSS global de `tokens.js` (la `summary`
+  necesita un `<span className="chevron">`).
+- Captions en `<Img>` para que el lightbox muestre nombre + descripción.
+
 Requiere datos reales (no código):
 1. **Precios reales** de Maison y Chez Lucas (`pricePerNight` es estimación).
 
