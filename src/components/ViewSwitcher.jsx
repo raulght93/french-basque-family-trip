@@ -1,6 +1,7 @@
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 
 export const VIEWS = [
+  { id: "inicio", glyph: "👋", label: "Inicio" },
   { id: "decidir", glyph: "🏠", label: "Decidir base" },
   { id: "mapa", glyph: "🗺️", label: "Mapa" },
   { id: "actividades", glyph: "🎫", label: "Actividades" },

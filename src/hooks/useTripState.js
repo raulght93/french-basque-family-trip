@@ -21,14 +21,14 @@ const DEFAULT_NIGHTS = 6;
 // (add / remove / rename) — the group size can change. The budget headcount
 // (`travelers`) is derived from this list, so there's a single source of truth.
 const DEFAULT_MEMBERS = [
-  { id: "m1", name: "Persona 1" },
-  { id: "m2", name: "Persona 2" },
-  { id: "m3", name: "Persona 3" },
-  { id: "m4", name: "Persona 4" },
-  { id: "m5", name: "Persona 5" },
-  { id: "m6", name: "Persona 6" },
-  { id: "m7", name: "Persona 7" },
-  { id: "m8", name: "Persona 8" },
+  { id: "m1", name: "Antonio" },
+  { id: "m2", name: "Mariví" },
+  { id: "m3", name: "Jesús" },
+  { id: "m4", name: "María" },
+  { id: "m5", name: "Antonio Jr" },
+  { id: "m6", name: "Raúl" },
+  { id: "m7", name: "Ainoa" },
+  { id: "m8", name: "Elena" },
 ];
 
 const toDate = (iso) => new Date(`${iso}T00:00:00`);
@@ -130,6 +130,18 @@ export const useTripState = () => {
       for (const [k, list] of Object.entries(prev)) next[k] = (list || []).filter((x) => x !== actId);
       return next;
     });
+  // Move an activity to a target day at a specific index (drag-and-drop drop
+  // target). If `index` is null/omitted, appends. Works across days.
+  const insertActivity = (toDay, actId, index = null) =>
+    setItinerary((prev) => {
+      const next = {};
+      for (const [k, list] of Object.entries(prev)) next[k] = (list || []).filter((x) => x !== actId);
+      const target = [...(next[toDay] || [])];
+      const at = index == null || index > target.length ? target.length : Math.max(0, index);
+      target.splice(at, 0, actId);
+      next[toDay] = target;
+      return next;
+    });
   // Reorder an activity within its day (dir: -1 up, +1 down).
   const moveActivityInDay = (dayIdx, actId, dir) =>
     setItinerary((prev) => {
@@ -186,7 +198,7 @@ export const useTripState = () => {
     nights, setNights, days,
     travelers, cars, setCars,
     itinerary, activitiesOnDay, isScheduled, dayOfActivity,
-    assignActivity, unassignActivity, moveActivityInDay,
+    assignActivity, unassignActivity, insertActivity, moveActivityInDay,
     applyProfile,
     budgetOverrides, setBudgetField,
     savedTick,

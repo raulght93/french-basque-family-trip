@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { ACTIVITIES, activityById, TYPE_META } from "../data/activities.js";
 import { placeById } from "../data/places.js";
@@ -7,8 +8,30 @@ import { ProfilesBar } from "./ProfilesBar.jsx";
 
 const fmtDur = (min) => (min >= 60 ? `${Math.round((min / 60) * 10) / 10} h` : `${min} min`);
 
+const DRAG_MIME = "application/x-fbt-activity";
+
+// Drag payload helpers. Use both an app-specific MIME and a text fallback so
+// the browser doesn't complain about empty drags and other apps can ignore it.
+const setDragPayload = (e, actId) => {
+  const data = JSON.stringify({ actId });
+  e.dataTransfer.setData(DRAG_MIME, data);
+  e.dataTransfer.setData("text/plain", data);
+  e.dataTransfer.effectAllowed = "move";
+};
+const readDragPayload = (e) => {
+  try {
+    const raw = e.dataTransfer.getData(DRAG_MIME) || e.dataTransfer.getData("text/plain");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.actId ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 export const ItineraryPanel = ({ state, size }) => {
   const base = baseById(state.baseId);
+  const [dragOver, setDragOver] = useState(null); // e.g. "day:3", "item:3:1", "unsched"
 
   const dayTotals = (actIds) => {
     let onSite = 0;
@@ -18,7 +41,7 @@ export const ItineraryPanel = ({ state, size }) => {
       if (!a) return;
       onSite += a.durationMin || 0;
       const d = base?.distances?.[a.placeId];
-      if (d) drive += d.min * 2; // round trip from base
+      if (d) drive += d.min * 2;
     });
     return { onSite, drive };
   };
@@ -26,6 +49,40 @@ export const ItineraryPanel = ({ state, size }) => {
   const unscheduledInterest = ACTIVITIES.filter(
     (a) => state.isInterested(a.id) && !state.isScheduled(a.id),
   );
+  const unscheduledAll = ACTIVITIES.filter((a) => !state.isScheduled(a.id));
+
+  const updateDragOver = (key) => {
+    if (key !== dragOver) setDragOver(key);
+  };
+  const clearDragOver = (key) => {
+    if (key === dragOver) setDragOver(null);
+  };
+
+  // Drop handlers.
+  const dropOnItem = (e, dayIdx, idx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const p = readDragPayload(e);
+    setDragOver(null);
+    if (!p) return;
+    state.insertActivity(dayIdx, p.actId, idx);
+  };
+  const dropOnDay = (e, dayIdx) => {
+    e.preventDefault();
+    const p = readDragPayload(e);
+    setDragOver(null);
+    if (!p) return;
+    state.insertActivity(dayIdx, p.actId, null);
+  };
+  const dropOnUnsched = (e) => {
+    e.preventDefault();
+    const p = readDragPayload(e);
+    setDragOver(null);
+    if (!p) return;
+    state.unassignActivity(p.actId);
+  };
+
+  const allowDrop = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -34,8 +91,11 @@ export const ItineraryPanel = ({ state, size }) => {
       </h2>
       <p style={{ fontFamily: fonts.sans, fontSize: "14px", color: colors.textMuted, marginBottom: "18px", lineHeight: 1.5 }}>
         {base
-          ? `Tiempos de coche calculados desde ${base.name} (${base.town}), ida y vuelta.`
-          : "Elige una base para ver los tiempos de coche de cada día."}
+          ? `Tiempos de coche calculados desde ${base.name} (${base.town}), ida y vuelta. `
+          : "Elige una base para ver los tiempos de coche de cada día. "}
+        <span style={{ color: colors.textSubtle }}>
+          💡 Arrastra las actividades entre días, o usa <strong>+ Añadir</strong> en cada día.
+        </span>
       </p>
 
       <ProfilesBar state={state} size={size} />
@@ -44,15 +104,22 @@ export const ItineraryPanel = ({ state, size }) => {
         {state.days.map((d, i) => {
           const actIds = state.activitiesOnDay(i);
           const { onSite, drive } = dayTotals(actIds);
+          const isDayDragOver = dragOver === `day:${i}`;
           return (
             <section
               key={i}
+              onDragOver={allowDrop}
+              onDragEnter={() => updateDragOver(`day:${i}`)}
+              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) clearDragOver(`day:${i}`); }}
+              onDrop={(e) => dropOnDay(e, i)}
               style={{
                 background: colors.bgCard,
-                border: `1px solid ${colors.border}`,
+                border: `2px solid ${isDayDragOver ? colors.accent : colors.border}`,
                 borderRadius: radii.lg,
                 padding: "16px",
                 boxShadow: shadows.sm,
+                transition: "border-color 0.12s, background 0.12s",
+                ...(isDayDragOver ? { background: colors.accentSoft } : null),
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
@@ -71,7 +138,7 @@ export const ItineraryPanel = ({ state, size }) => {
 
               {actIds.length === 0 ? (
                 <p style={{ fontSize: "13px", color: colors.textSubtle, fontStyle: "italic", padding: "8px 0" }}>
-                  Día libre. Asigna actividades desde abajo o desde la pestaña Actividades.
+                  Día libre. Suelta aquí una actividad o usa «+ Añadir» abajo.
                 </p>
               ) : (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "7px" }}>
@@ -79,13 +146,31 @@ export const ItineraryPanel = ({ state, size }) => {
                     const a = activityById(id);
                     if (!a) return null;
                     const tm = TYPE_META[a.type] || {};
+                    const isItemDragOver = dragOver === `item:${i}:${idx}`;
                     const arrowStyle = (disabled) => ({
                       background: "transparent", border: "none",
                       color: disabled ? colors.border : colors.textMuted,
                       cursor: disabled ? "default" : "pointer", fontSize: "12px", lineHeight: 1, padding: "1px 3px",
                     });
                     return (
-                      <li key={id} style={{ display: "flex", alignItems: "center", gap: "9px", background: colors.bgPanel, borderRadius: radii.md, padding: "8px 10px" }}>
+                      <li
+                        key={id}
+                        draggable
+                        onDragStart={(e) => setDragPayload(e, id)}
+                        onDragOver={allowDrop}
+                        onDragEnter={(e) => { e.stopPropagation(); updateDragOver(`item:${i}:${idx}`); }}
+                        onDragLeave={(e) => { e.stopPropagation(); if (!e.currentTarget.contains(e.relatedTarget)) clearDragOver(`item:${i}:${idx}`); }}
+                        onDrop={(e) => dropOnItem(e, i, idx)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "9px",
+                          background: isItemDragOver ? colors.accentMuted : colors.bgPanel,
+                          borderRadius: radii.md, padding: "8px 10px",
+                          borderTop: isItemDragOver ? `2px solid ${colors.accent}` : "2px solid transparent",
+                          cursor: "grab",
+                          transition: "background 0.1s, border-color 0.1s",
+                        }}
+                      >
+                        <span aria-hidden="true" data-print="hide" title="Arrastra para mover" style={{ fontSize: "14px", color: colors.textSubtle, cursor: "grab" }}>⋮⋮</span>
                         <span data-print="hide" style={{ display: "flex", flexDirection: "column" }}>
                           <button type="button" aria-label={`Subir ${a.name}`} disabled={idx === 0} onClick={() => state.moveActivityInDay(i, id, -1)} style={arrowStyle(idx === 0)}>▲</button>
                           <button type="button" aria-label={`Bajar ${a.name}`} disabled={idx === actIds.length - 1} onClick={() => state.moveActivityInDay(i, id, 1)} style={arrowStyle(idx === actIds.length - 1)}>▼</button>
@@ -97,6 +182,18 @@ export const ItineraryPanel = ({ state, size }) => {
                             {placeById(a.placeId)?.name} · {fmtDur(a.durationMin)}{a.price > 0 ? ` · ${a.price} €` : ""}
                           </div>
                         </div>
+                        <select
+                          data-print="hide"
+                          aria-label={`Mover ${a.name} a otro día`}
+                          value={String(i)}
+                          onChange={(e) => state.assignActivity(Number(e.target.value), id)}
+                          style={{ background: "transparent", color: colors.textSubtle, border: "none", fontSize: "11.5px", fontFamily: fonts.sans, cursor: "pointer" }}
+                          title="Mover a otro día"
+                        >
+                          {state.days.map((dd, j) => (
+                            <option key={j} value={j}>D{j + 1}</option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           data-print="hide"
@@ -111,32 +208,93 @@ export const ItineraryPanel = ({ state, size }) => {
                   })}
                 </ul>
               )}
+
+              {/* + Añadir picker (mobile-friendly alternative to drag) */}
+              <div data-print="hide" style={{ marginTop: "10px" }}>
+                <select
+                  aria-label={`Añadir actividad al día ${i + 1}`}
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value === "") return;
+                    state.assignActivity(i, e.target.value);
+                  }}
+                  style={{
+                    width: "100%",
+                    background: colors.bgPanel,
+                    color: colors.textBody,
+                    border: `1px dashed ${colors.borderStrong}`,
+                    borderRadius: radii.md,
+                    padding: "7px 10px",
+                    fontSize: "12.5px",
+                    fontFamily: fonts.sans,
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">+ Añadir actividad…</option>
+                  {unscheduledAll.length === 0 ? (
+                    <option value="" disabled>(todas las actividades ya están asignadas)</option>
+                  ) : (
+                    unscheduledAll.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {TYPE_META[a.type]?.glyph || "•"} {a.name} — {placeById(a.placeId)?.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
             </section>
           );
         })}
       </div>
 
-      {/* Unscheduled interests */}
+      {/* Unscheduled interests (also a drop zone: drop here = unassign) */}
       {unscheduledInterest.length > 0 && (
-        <section style={{ marginTop: "20px", background: colors.bgPanel, border: `1px solid ${colors.border}`, borderRadius: radii.lg, padding: "16px" }}>
+        <section
+          onDragOver={allowDrop}
+          onDragEnter={() => updateDragOver("unsched")}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) clearDragOver("unsched"); }}
+          onDrop={dropOnUnsched}
+          style={{
+            marginTop: "20px",
+            background: dragOver === "unsched" ? colors.accentSoft : colors.bgPanel,
+            border: `2px ${dragOver === "unsched" ? "solid" : "dashed"} ${dragOver === "unsched" ? colors.accent : colors.borderStrong}`,
+            borderRadius: radii.lg,
+            padding: "16px",
+            transition: "background 0.12s, border-color 0.12s",
+          }}
+        >
           <div style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "10px" }}>
             ♥ Marcadas sin asignar ({unscheduledInterest.length})
+            <span style={{ marginLeft: "10px", fontSize: "10.5px", color: colors.textSubtle, fontWeight: 500, letterSpacing: "0.5px" }}>
+              · suelta aquí para quitarlas de un día
+            </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {unscheduledInterest.map((a) => {
               const tm = TYPE_META[a.type] || {};
               return (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "9px", flexWrap: "wrap" }}>
+                <div
+                  key={a.id}
+                  draggable
+                  onDragStart={(e) => setDragPayload(e, a.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "9px", flexWrap: "wrap",
+                    background: colors.bgCard, border: `1px solid ${colors.border}`,
+                    borderRadius: radii.md, padding: "8px 10px", cursor: "grab",
+                  }}
+                >
+                  <span aria-hidden="true" data-print="hide" style={{ color: colors.textSubtle }}>⋮⋮</span>
                   <span aria-hidden="true">{tm.glyph}</span>
                   <span style={{ flex: 1, minWidth: 140, fontSize: "13.5px", color: colors.text }}>
                     {a.name} <span style={{ color: colors.textMuted, fontSize: "12px" }}>· {placeById(a.placeId)?.name}</span>
                   </span>
                   <select
+                    data-print="hide"
                     aria-label={`Asignar ${a.name} a un día`}
                     defaultValue=""
                     onChange={(e) => e.target.value !== "" && state.assignActivity(Number(e.target.value), a.id)}
                     style={{
-                      background: colors.bgCard, color: colors.textBody, border: `1px solid ${colors.border}`,
+                      background: colors.bgPanel, color: colors.textBody, border: `1px solid ${colors.border}`,
                       borderRadius: radii.md, padding: "6px 9px", fontSize: "12.5px", fontFamily: fonts.sans, cursor: "pointer",
                     }}
                   >

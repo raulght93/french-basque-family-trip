@@ -85,6 +85,8 @@ Es **una sola familia**, así que el interés es **por participante individual**
 - **`state.travelers` es derivado = `members.length`** (no hay estado/stepper
   aparte): los participantes son la única fuente de verdad para el presupuesto.
   El `MemberBar` aparece en Decidir base, Actividades y Presupuesto.
+- Defaults reales: `Antonio, Mariví, Jesús, María, Antonio Jr, Raúl, Ainoa,
+  Elena` — renombrables.
 - `state.votes` = `{ activityId: [memberId,...] }`. `toggleVote(actId, memberId)`,
   `hasVoted`, `voteCount`, `votersOf`.
 - `isInterested(actId)` = `voteCount > 0` (alguien votó). Es el derivado que
@@ -152,6 +154,18 @@ día (↑/↓ en Itinerary) · nombre de viaje fijo · atajo de noches en el Hea
   carreteras reales vía **OSRM en runtime** (`router.project-osrm.org`,
   cacheada por firma de waypoints); si un tramo falla, línea recta discontinua
   de respaldo. Leyenda de días bajo el mapa.
+
+✅ Hecho 2026-05-28:
+- **Página de Inicio** (`IntroPanel.jsx`): tab `inicio` (default), con hero,
+  contexto del país, datos de un vistazo, lugares por zona (con foto y desc),
+  «no te lo pierdas», antes-de-salir y CTAs a las otras vistas.
+- **Drag-and-drop nativo HTML5** en el Itinerario: arrastrar actividades entre
+  días, reordenar dentro de un día (drop sobre item = insertar antes), y
+  soltar en «Marcadas sin asignar» = desasignar. Sin librerías. Helpers:
+  `insertActivity(day, actId, index)` en `useTripState`. Acompañado de un
+  selector «+ Añadir» por día y un mini-select «Día N ▾» por item para mover
+  rápido en móvil (donde el DnD nativo no va).
+- **Nombres reales por defecto** de los 8 participantes (editables).
 
 Requiere datos reales (no código):
 1. **Precios reales** de Maison y Chez Lucas (`pricePerNight` es estimación).

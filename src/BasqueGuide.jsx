@@ -13,6 +13,7 @@ import { ItineraryPanel } from "./components/ItineraryPanel.jsx";
 import { ChecklistPanel } from "./components/ChecklistPanel.jsx";
 import { BudgetPanel } from "./components/BudgetPanel.jsx";
 import { PrintView } from "./components/PrintView.jsx";
+import { IntroPanel } from "./components/IntroPanel.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 
 // RegionMap pulls in Leaflet (~150 KB) — keep it off the critical path.
@@ -29,10 +30,12 @@ export default function BasqueGuide() {
   const size = useResponsive();
   const state = useTripState();
   const { printMode, triggerPrint } = usePrintMode();
-  const [view, setView] = useState("decidir");
+  const [view, setView] = useState("inicio");
 
   const renderView = () => {
     switch (view) {
+      case "inicio":
+        return <IntroPanel state={state} size={size} onJump={setView} />;
       case "mapa":
         return (
           <ErrorBoundary label="No se pudo cargar el mapa">
@@ -50,8 +53,9 @@ export default function BasqueGuide() {
       case "presupuesto":
         return <BudgetPanel state={state} size={size} />;
       case "decidir":
-      default:
         return <BaseDecider state={state} size={size} />;
+      default:
+        return <IntroPanel state={state} size={size} onJump={setView} />;
     }
   };
 
