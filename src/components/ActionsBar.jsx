@@ -76,7 +76,7 @@ export const ActionsBar = ({ state, onPrint, size }) => {
       )}
 
       <button type="button" style={btnStyle} onClick={handleShare} aria-label="Compartir enlace del viaje">
-        {copied ? "✓ Copiado" : "🔗 Compartir"}
+        {copied ? "✓ Copiado" : "🔗"}
       </button>
 
       <button type="button" style={btnStyle} onClick={onPrint} aria-label="Imprimir o guardar como PDF">

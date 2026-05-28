@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useTripState } from "./hooks/useTripState.js";
+import { ACTIVITIES } from "./data/activities.js";
 import { useResponsive } from "./hooks/useResponsive.js";
 import { useGoogleFonts } from "./hooks/useGoogleFonts.js";
 import { usePrintMode } from "./hooks/usePrintMode.js";
@@ -33,6 +34,19 @@ export default function BasqueGuide() {
   const { printMode, triggerPrint } = usePrintMode();
   const [view, setView] = useState("inicio");
 
+  // Progress badges shown on the tab bar — light visual feedback of what
+  // already has content. Recomputed when votes / itinerary / base change.
+  const badges = useMemo(() => {
+    const voted = ACTIVITIES.filter((a) => state.isInterested(a.id)).length;
+    const scheduled = Object.values(state.itinerary).reduce((s, l) => s + (l?.length || 0), 0);
+    return {
+      decidir: state.baseId ? "✓" : null,
+      actividades: voted > 0 ? voted : null,
+      itinerario: scheduled > 0 ? scheduled : null,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.baseId, state.votes, state.itinerary]);
+
   const renderView = () => {
     switch (view) {
       case "inicio":
@@ -65,9 +79,14 @@ export default function BasqueGuide() {
     <div style={{ background: colors.bg, minHeight: "100vh", color: colors.text }}>
       <Header state={state} size={size} />
       <ActionsBar state={state} onPrint={triggerPrint} size={size} />
-      <ViewSwitcher active={view} onChange={setView} size={size} />
+      <ViewSwitcher active={view} onChange={setView} size={size} badges={badges} />
 
-      <main style={{ padding: size.isMobile ? "20px 14px 60px" : "28px 28px 80px" }}>
+      <main
+        id="fbt-view"
+        role="tabpanel"
+        aria-labelledby={`tab-${view}`}
+        style={{ padding: size.isMobile ? "20px 14px 60px" : "28px 28px 80px" }}
+      >
         {printMode ? <PrintView state={state} /> : renderView()}
       </main>
 

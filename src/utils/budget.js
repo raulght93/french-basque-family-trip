@@ -30,8 +30,7 @@ export const computeBudget = ({
 }) => {
   const o = { ...BUDGET_DEFAULTS, ...overrides };
   const tripDays = nights + 1;
-  const pricePerNight =
-    overrides.pricePerNight != null ? overrides.pricePerNight : base?.pricePerNight ?? 0;
+  const pricePerNight = overrides.pricePerNight ?? base?.pricePerNight ?? 0;
 
   const lodging = pricePerNight * nights;
 
@@ -73,10 +72,13 @@ export const computeBudget = ({
       key: "fuel",
       label: "Combustible",
       amount: round(fuel),
-      detail:
-        `${round(localKm + homeKm)} km ida/vuelta · ${o.consumption} L/100 · ` +
-        `${o.fuelPricePerL} €/L${cars > 1 ? ` × ${cars} coches` : ""}` +
-        (o.includeHomeTrip ? "" : " (sin viaje de casa)"),
+      detail: [
+        `${round(localKm + homeKm)} km ida/vuelta`,
+        `${o.consumption} L/100`,
+        `${o.fuelPricePerL} €/L`,
+        cars > 1 ? `× ${cars} coches` : "",
+        o.includeHomeTrip ? "" : "(sin viaje de casa)",
+      ].filter(Boolean).join(" · "),
     },
   ];
 

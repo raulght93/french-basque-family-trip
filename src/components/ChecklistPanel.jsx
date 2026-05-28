@@ -2,20 +2,27 @@ import { useState } from "react";
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { useChecklist } from "../hooks/useChecklist.js";
 import { CATEGORIES } from "../data/checklistItems.js";
-import { daysUntil } from "../utils/dates.js";
+import { daysUntil, deadlineLevel } from "../utils/dates.js";
 
 const catLabel = (id) => CATEGORIES.find((c) => c.id === id) || { label: id, glyph: "•" };
 
+const DEADLINE_PALETTE = {
+  past:   { bg: colors.dangerSoft,  fg: colors.dangerText },
+  soon:   { bg: colors.warningSoft, fg: colors.warningText },
+  future: { bg: colors.successSoft, fg: colors.successText },
+};
+const deadlineText = (d) => {
+  if (d < 0) return `vencido (${-d} d)`;
+  if (d === 0) return "¡hoy!";
+  return `en ${d} días`;
+};
+
 const DeadlineBadge = ({ iso }) => {
   const d = daysUntil(iso);
-  const past = d < 0;
-  const soon = d >= 0 && d <= 14;
-  const bg = past ? colors.dangerSoft : soon ? colors.warningSoft : colors.successSoft;
-  const fg = past ? colors.dangerText : soon ? colors.warningText : colors.successText;
-  const txt = past ? `vencido (${-d} d)` : d === 0 ? "¡hoy!" : `en ${d} días`;
+  const { bg, fg } = DEADLINE_PALETTE[deadlineLevel(iso)];
   return (
     <span style={{ background: bg, color: fg, borderRadius: radii.pill, padding: "1px 8px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}>
-      ⏳ {txt}
+      ⏳ {deadlineText(d)}
     </span>
   );
 };

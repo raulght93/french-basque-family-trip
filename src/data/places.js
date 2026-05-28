@@ -205,8 +205,11 @@ export const PLACES = [
     lng: -1.2050,
     desc:
       "Grutas de Isturitz y Oxocelhaya, cuevas prehistóricas con grabados y " +
-      "concreciones, muy cerca de Chez Lucas. Visita guiada bajo tierra.",
-    img: null,
+      "concreciones, muy cerca de Chez Lucas. Visita guiada bajo tierra; de " +
+      "aquí salieron las célebres flautas de hueso paleolíticas.",
+    // Pieza paleolítica hallada en Isturitz (Musée de Toulouse, MHNT). No hay
+    // foto buena del interior de la cueva en Wikimedia.
+    img: `${WIKI}/4/4a/Pointe_MHNT_PRE2010.0.7.2_fond.jpg/500px-Pointe_MHNT_PRE2010.0.7.2_fond.jpg`,
   },
   {
     id: "hondarribia",

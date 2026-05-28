@@ -107,7 +107,7 @@ export const ItineraryPanel = ({ state, size }) => {
           const isDayDragOver = dragOver === `day:${i}`;
           return (
             <section
-              key={i}
+              key={d.toISOString().slice(0, 10)}
               onDragOver={allowDrop}
               onDragEnter={() => updateDragOver(`day:${i}`)}
               onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) clearDragOver(`day:${i}`); }}
@@ -311,7 +311,7 @@ export const ItineraryPanel = ({ state, size }) => {
                   >
                     <option value="">Asignar a…</option>
                     {state.days.map((d, i) => (
-                      <option key={i} value={i}>Día {i + 1} · {formatDow(d)}</option>
+                      <option key={d.toISOString().slice(0, 10)} value={i}>Día {i + 1} · {formatDow(d)}</option>
                     ))}
                   </select>
                 </div>

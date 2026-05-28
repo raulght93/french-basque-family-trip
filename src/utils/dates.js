@@ -27,4 +27,15 @@ export const daysUntil = (isoDate) => {
   return Math.round((target - today) / 86400000);
 };
 
+// Severity level of a deadline relative to today.
+//   "past"   → already passed
+//   "soon"   → 0..14 days away
+//   "future" → more than 14 days away
+export const deadlineLevel = (iso) => {
+  const d = daysUntil(iso);
+  if (d < 0) return "past";
+  if (d <= 14) return "soon";
+  return "future";
+};
+
 export { MONTHS, DOW };

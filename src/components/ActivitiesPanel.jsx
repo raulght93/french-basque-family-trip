@@ -12,6 +12,15 @@ const Chip = ({ children, bg, fg }) => (
   </span>
 );
 
+// Palette per access level (ACCESS_META.color = "success" | "warning" | "danger").
+// Encapsulates what used to be nested ternaries inline in the JSX.
+const ACCESS_PALETTE = {
+  success: { bg: colors.successSoft, fg: colors.successText, border: colors.success },
+  warning: { bg: colors.warningSoft, fg: colors.warningText, border: colors.warning },
+  danger:  { bg: colors.dangerSoft,  fg: colors.dangerText,  border: colors.danger },
+};
+const accessPalette = (am) => ACCESS_PALETTE[am.color] ?? ACCESS_PALETTE.warning;
+
 const SELECT_STYLE = {
   background: colors.bgCard,
   color: colors.textBody,
@@ -148,20 +157,23 @@ export const ActivitiesPanel = ({ state, size }) => {
                   <Chip bg={colors.bgPanel} fg={colors.textMuted}>🕐 {a.hours}</Chip>
                   <Chip bg={colors.bgPanel} fg={colors.textMuted}>⏱️ {a.durationMin >= 60 ? `${Math.round((a.durationMin / 60) * 10) / 10} h` : `${a.durationMin} min`}</Chip>
                   {/* Access level: discreet round icon badge with tooltip. */}
-                  <span
-                    title={am.label}
-                    aria-label={`Accesibilidad: ${am.label}`}
-                    style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      width: "22px", height: "22px", borderRadius: "50%",
-                      background: am.color === "success" ? colors.successSoft : am.color === "warning" ? colors.warningSoft : colors.dangerSoft,
-                      color: am.color === "success" ? colors.successText : am.color === "warning" ? colors.warningText : colors.dangerText,
-                      border: `1px solid ${am.color === "success" ? colors.success : am.color === "warning" ? colors.warning : colors.danger}`,
-                      fontSize: "12px",
-                    }}
-                  >
-                    {am.glyph}
-                  </span>
+                  {(() => {
+                    const ap = accessPalette(am);
+                    return (
+                      <span
+                        title={am.label}
+                        aria-label={`Accesibilidad: ${am.label}`}
+                        style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: "22px", height: "22px", borderRadius: "50%",
+                          background: ap.bg, color: ap.fg, border: `1px solid ${ap.border}`,
+                          fontSize: "12px",
+                        }}
+                      >
+                        {am.glyph}
+                      </span>
+                    );
+                  })()}
                   {a.booking && <Chip bg={colors.warningSoft} fg={colors.warningText}>📞 Reservar</Chip>}
                 </div>
 
@@ -241,7 +253,7 @@ export const ActivitiesPanel = ({ state, size }) => {
                   >
                     <option value="">📅 Sin día asignado</option>
                     {state.days.map((d, i) => (
-                      <option key={i} value={i}>Día {i + 1} · {formatDow(d)}</option>
+                      <option key={d.toISOString().slice(0, 10)} value={i}>Día {i + 1} · {formatDow(d)}</option>
                     ))}
                   </select>
                 </div>

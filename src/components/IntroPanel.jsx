@@ -104,10 +104,9 @@ export const IntroPanel = ({ state, size, onJump }) => {
         <h2 style={h2Style(size)}>El país, en cinco trazos</h2>
         <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr" : "1fr", gap: "14px 26px", fontFamily: fonts.sans, fontSize: "13.5px", color: colors.textBody, lineHeight: 1.6 }}>
           <p>
-            El <strong>Pays Basque Nord</strong> (Iparralde) es el lado francés del País
-            Vasco: tres provincias históricas — <em>Labourd</em> (la costa y los pueblos blancos),
-            <em> Basse-Navarre</em> (Saint-Jean-Pied-de-Port) y <em>Soule</em> (más al este). Una
-            mezcla rara y bonita de verde pirenaico, olas atlánticas, ferias de pueblo y
+            El <strong>Pays Basque Nord</strong> (Iparralde) es el lado francés del País Vasco:
+            tres provincias históricas — <em>Labourd</em> (la costa y los pueblos blancos), <em>Basse-Navarre</em> (Saint-Jean-Pied-de-Port) y <em>Soule</em> (más al este).
+            Una mezcla rara y bonita de verde pirenaico, olas atlánticas, ferias de pueblo y
             casas de entramado con vigas rojas o verdes.
           </p>
           <p>
@@ -123,11 +122,10 @@ export const IntroPanel = ({ state, size, onJump }) => {
             del valle.
           </p>
           <p>
-            En la costa: <strong>Biarritz</strong> y sus playas de surf, la bahía protegida de
-            <strong> San Juan de Luz</strong>, los 3 km de arena de <strong>Hendaya</strong> y, al
-            otro lado del estuario, <strong>Hondarribia</strong>. Hacia el interior:
-            <strong> Sare</strong>, <strong>Ainhoa</strong> y <strong>Espelette</strong>, los
-            pueblos «más bellos de Francia», y la subida en cremallera a <strong>La Rhune</strong>.
+            En la costa: <strong>Biarritz</strong> y sus playas de surf, la bahía protegida de <strong>San Juan de Luz</strong>,
+            los 3 km de arena de <strong>Hendaya</strong> y, al otro lado del estuario, <strong>Hondarribia</strong>.
+            Hacia el interior: <strong>Sare</strong>, <strong>Ainhoa</strong> y <strong>Espelette</strong>,
+            los pueblos «más bellos de Francia», y la subida en cremallera a <strong>La Rhune</strong>.
           </p>
         </div>
       </section>
@@ -135,7 +133,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
       {/* Quick facts */}
       <section style={{ marginBottom: "22px" }}>
         <h2 style={h2Style(size)}>De un vistazo</h2>
-        <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr" : size.isDesktop ? "repeat(3, 1fr)" : "1fr 1fr", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols(size, "1fr", "1fr 1fr", "repeat(3, 1fr)"), gap: "10px" }}>
           {FACTS.map((f) => (
             <div key={f.label} style={{ ...card, padding: "12px 14px" }}>
               <div style={{ fontSize: "11px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "3px" }}>
@@ -160,7 +158,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
               <span style={{ fontWeight: 700, color: colors.text }}>{group.title}</span>
               <span style={{ marginLeft: "8px", color: colors.textSubtle, fontSize: "12.5px" }}>{group.desc}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr" : size.isDesktop ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: "10px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: gridCols(size, "1fr", "repeat(2, 1fr)", "repeat(3, 1fr)"), gap: "10px" }}>
               {placesByZone[group.id].map((p) => (
                 <article key={p.id} style={card}>
                   <div style={{ height: "120px" }}>
@@ -181,7 +179,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
       {/* Must-sees */}
       <section style={{ marginBottom: "22px" }}>
         <h2 style={h2Style(size)}>Lo que no os podéis perder</h2>
-        <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr" : size.isDesktop ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols(size, "1fr", "repeat(2, 1fr)", "repeat(4, 1fr)"), gap: "10px" }}>
           {MUST_SEE_IDS.map((id) => {
             const a = activityById(id);
             if (!a) return null;
@@ -220,7 +218,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
         <p style={{ fontSize: "13px", color: colors.textMuted, margin: "8px 0 12px", lineHeight: 1.5 }}>
           Lo que no podéis dejar de probar. Pulsa una foto para ampliarla.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr 1fr" : size.isDesktop ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols(size, "1fr 1fr", "repeat(3, 1fr)", "repeat(4, 1fr)"), gap: "10px" }}>
           {FOODS.map((f) => (
             <article key={f.id} style={card}>
               <div style={{ height: "110px" }}>
@@ -271,7 +269,7 @@ export const IntroPanel = ({ state, size, onJump }) => {
           <span>🔗 Enlaces útiles</span>
           <span aria-hidden="true" className="chevron" style={chevronStyle}>▾</span>
         </summary>
-        <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr 1fr" : size.isMobile ? "1fr" : "1fr 1fr", gap: "16px", marginTop: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols(size, "1fr", "1fr 1fr", "1fr 1fr 1fr"), gap: "16px", marginTop: "12px" }}>
           {LINK_GROUPS.map((g) => (
             <div key={g.id}>
               <h3 style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "8px" }}>
@@ -333,6 +331,13 @@ const h2Style = (size) => ({
   color: colors.text,
   margin: "8px 0 12px",
 });
+
+// Pick a grid column template per breakpoint (avoids nested ternaries inline).
+const gridCols = (size, mobile, tablet, desktop) => {
+  if (size.isMobile) return mobile;
+  if (size.isDesktop) return desktop;
+  return tablet;
+};
 
 // <summary> styled as a clickable h2 with a rotating chevron on the right.
 // The chevron's rotation is handled by the global CSS rule in tokens.js

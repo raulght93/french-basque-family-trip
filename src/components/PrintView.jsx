@@ -30,7 +30,7 @@ export const PrintView = ({ state }) => {
   }, [base, selectedActivities]);
 
   const o = state.budgetOverrides;
-  const get = (k, d) => (o[k] != null ? o[k] : d);
+  const get = (k, d) => o[k] ?? d;
   const budget = computeBudget({
     base,
     nights: state.nights,
@@ -73,7 +73,7 @@ export const PrintView = ({ state }) => {
       {state.days.map((d, i) => {
         const actIds = state.activitiesOnDay(i);
         return (
-          <div key={i} style={{ marginBottom: "10px" }}>
+          <div key={d.toISOString().slice(0, 10)} style={{ marginBottom: "10px" }}>
             <div style={{ fontSize: "14px", fontWeight: 700 }}>Día {i + 1} · {formatDow(d)}</div>
             {actIds.length === 0 ? (
               <div style={{ fontSize: "12.5px", color: colors.textSubtle, fontStyle: "italic" }}>Día libre</div>

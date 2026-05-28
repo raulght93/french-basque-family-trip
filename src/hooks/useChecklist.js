@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { useLocalStorage } from "./useLocalStorage.js";
+import { useLocalStorage, STORAGE_PREFIX } from "./useLocalStorage.js";
 import { AUTO_ITEMS } from "../data/checklistItems.js";
 
 // Checklist state. `checked` and `customItems` are private (not shared via
-// URL). `showCarItems` hides car-only items when the family travels in one car.
+// URL). Car-only items are hidden when the family travels in a single car.
 export const useChecklist = ({ cars = 1 } = {}) => {
-  const [checked, setChecked] = useLocalStorage("fbt_checklist_checked", {});
-  const [customItems, setCustomItems] = useLocalStorage("fbt_checklist_custom", []);
+  const [checked, setChecked] = useLocalStorage(`${STORAGE_PREFIX}checklist_checked`, {});
+  const [customItems, setCustomItems] = useLocalStorage(`${STORAGE_PREFIX}checklist_custom`, []);
 
   const autoItems = useMemo(
     () => AUTO_ITEMS.filter((item) => !item.cars || cars > 1),

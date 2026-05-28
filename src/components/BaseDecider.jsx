@@ -3,7 +3,7 @@ import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { BASES } from "../data/bases.js";
 import { PLACES, ZONE_LABEL } from "../data/places.js";
 import { activitiesForPlace } from "../data/activities.js";
-import { daysUntil } from "../utils/dates.js";
+import { daysUntil, deadlineLevel } from "../utils/dates.js";
 import { MemberBar } from "./MemberBar.jsx";
 
 const fmtMin = (min) => {
@@ -14,16 +14,22 @@ const fmtMin = (min) => {
   return m ? `${h}h ${m}min` : `${h}h`;
 };
 
+const DEADLINE_PALETTE = {
+  past:   { bg: colors.dangerSoft,  fg: colors.dangerText },
+  soon:   { bg: colors.warningSoft, fg: colors.warningText },
+  future: { bg: colors.successSoft, fg: colors.successText },
+};
+const deadlineText = (d) => {
+  if (d < 0) return `Venció hace ${-d} d`;
+  if (d === 0) return "¡Hoy!";
+  return `${d} días`;
+};
 const DeadlineChip = ({ iso, label }) => {
   const d = daysUntil(iso);
-  const past = d < 0;
-  const soon = d >= 0 && d <= 14;
-  const bg = past ? colors.dangerSoft : soon ? colors.warningSoft : colors.successSoft;
-  const fg = past ? colors.dangerText : soon ? colors.warningText : colors.successText;
-  const txt = past ? `Venció hace ${-d} d` : d === 0 ? "¡Hoy!" : `${d} días`;
+  const { bg, fg } = DEADLINE_PALETTE[deadlineLevel(iso)];
   return (
     <span style={{ background: bg, color: fg, borderRadius: radii.pill, padding: "2px 9px", fontSize: "11.5px", fontWeight: 700 }}>
-      {label}: {txt}
+      {label}: {deadlineText(d)}
     </span>
   );
 };
@@ -144,12 +150,15 @@ export const BaseDecider = ({ state, size }) => {
         {scored.map(({ base, legs, totalMin, totalKm }) => {
           const isChosen = state.baseId === base.id;
           const isBest = totalMin === bestMin && scored.length > 1;
+          let borderColor = colors.border;
+          if (isChosen) borderColor = colors.accent;
+          else if (isBest) borderColor = colors.green;
           return (
             <article
               key={base.id}
               style={{
                 background: colors.bgCard,
-                border: `2px solid ${isChosen ? colors.accent : isBest ? colors.green : colors.border}`,
+                border: `2px solid ${borderColor}`,
                 borderRadius: radii.lg,
                 padding: size.isMobile ? "16px" : "20px",
                 boxShadow: shadows.sm,

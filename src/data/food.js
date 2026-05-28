@@ -16,7 +16,7 @@ export const FOODS = [
     id: "chocolate_bayona",
     name: "Chocolate de Bayona",
     desc: "Bayonne fue la primera ciudad chocolatera de Francia (s. XVII). Pasta de cacao molida a la antigua, intensa; pruébalo en una chocolaterie del Petit Bayonne.",
-    img: null,
+    img: `${WIKI}/6/64/00_Ganach%C3%A9_de_chocolate.jpg/500px-00_Ganach%C3%A9_de_chocolate.jpg`,
   },
   {
     id: "gateau_basque",

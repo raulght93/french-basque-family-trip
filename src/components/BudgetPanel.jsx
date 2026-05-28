@@ -37,7 +37,7 @@ const stepBtn = {
 export const BudgetPanel = ({ state, size }) => {
   const base = baseById(state.baseId);
   const o = state.budgetOverrides;
-  const get = (k, d) => (o[k] != null ? o[k] : d);
+  const get = (k, d) => o[k] ?? d;
 
   // Selected = voted by anyone OR scheduled in the itinerary.
   const selectedActivities = useMemo(() => {
