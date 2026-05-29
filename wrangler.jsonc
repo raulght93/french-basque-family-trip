@@ -1,0 +1,30 @@
+{
+  // Worker que sirve la API de votos compartidos + los assets estáticos
+  // del build de Vite (./dist).
+  //
+  // SETUP INICIAL (una sola vez):
+  //   npx wrangler kv namespace create VOTES_KV           → copia el "id"
+  //   npx wrangler kv namespace create VOTES_KV --preview → copia el "preview_id"
+  //   Pega ambos abajo y haz `npm run deploy`.
+  //
+  // Deploy: `npm run deploy` (que es `vite build && wrangler deploy`).
+  // Dev local: `npm run dev:worker` (Vite + Worker juntos vía wrangler dev).
+
+  "name": "french-basque-family-trip",
+  "compatibility_date": "2026-05-28",
+  "main": "./worker.js",
+
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "VOTES_KV",
+      "id": "PASTE_ID_HERE",
+      "preview_id": "PASTE_PREVIEW_ID_HERE"
+    }
+  ]
+}

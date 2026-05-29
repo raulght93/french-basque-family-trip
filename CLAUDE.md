@@ -89,8 +89,8 @@ la nube:
   de hacer nada.
 - `state.travelers` = `TEAM.length` (8). No editable.
 - `state.votes` = `{ activityId: [memberId,…] }` localmente. Se sincroniza
-  con `/api/votes` (Pages Function en `functions/api/votes.js`, almacén KV
-  `VOTES_KV`, bucket = `TRIP_KEY` en `data/team.js`).
+  con `/api/votes` servido por **el propio Worker** (`worker.js` en la raíz),
+  almacenado en el KV `VOTES_KV`, bucket = `TRIP_KEY` en `data/team.js`.
 - **Hook `useVotesSync`** (`hooks/useVotesSync.js`): GET inicial + GET en
   focus / cada 60 s; POST debounced 600 ms cuando cambian tus propios votos.
   En el merge, los votos del propio `selfMemberId` siempre tienen prioridad

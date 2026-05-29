@@ -37,7 +37,7 @@ export default function BasqueGuide() {
   const [view, setView] = useState("inicio");
 
   // Auto-sync of votes with the shared cloud bucket (Cloudflare KV via the
-  // Pages Function in /functions/api/votes.js).
+  // Worker in worker.js at the repo root — see DEPLOY.md).
   useVotesSync({
     votes: state.votes,
     setVotes: state.setVotes,
