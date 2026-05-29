@@ -1,19 +1,32 @@
 // Cloudflare Worker for the trip app.
 //
-// Two responsibilities:
-//   1. /api/votes  — shared family votes, persisted in a KV namespace.
-//   2. anything else → served as a static asset from ./dist (the Vite build).
+// Responsibilities:
+//   1. /api/state — shared trip state (votes, comments, base, itinerary,
+//      presence, recent activity log). One KV key per trip.
+//   2. anything else → served as a static asset from ./dist via env.ASSETS.
 //
-// SETUP (one-time, see DEPLOY.md):
-//   • Create the KV: `npx wrangler kv namespace create VOTES_KV`
-//     (and `--preview` too). Paste both ids into wrangler.jsonc.
-//   • Then `npm run deploy` → `vite build && wrangler deploy`.
+// Storage shape (one key per TRIP_KEY):
+//   {
+//     byMember: { m1: ["actId",…], … },               // votes
+//     comments: { actId: { m1: { text, ts }, … }, … },// one comment per (act, member)
+//     shared: {
+//       baseId: "..." | null,
+//       baseUpdatedBy, baseUpdatedAt,
+//       itinerary: { "0": ["actId"], "1": [...], … },
+//       itineraryUpdatedBy, itineraryUpdatedAt,
+//     },
+//     presence: { m1: "ISO", … },                     // last-seen per member
+//     log:      [{ ts, memberId, kind, summary }, …], // ring buffer, last 50
+//     updatedAt: "ISO",
+//   }
 //
-// API storage shape (one key per trip):
-//   { byMember: { m1: ["actId",…], m2: [...], … }, updatedAt: "ISO" }
+// POST dispatches by `kind`:
+//   • "votes"     { memberId, activityIds }            — per-member merge
+//   • "comment"   { memberId, activityId, text }       — empty text = delete
+//   • "shared"    { memberId, patch: { baseId?, itinerary? } }
+//   • "ping"      { memberId }                         — only bumps presence
 //
-// POST atomically replaces ONLY the caller's member entry — concurrent
-// writes from different family members don't collide.
+// GET supports `?me=mX` to bump presence on read.
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,8 +37,14 @@ const CORS = {
 const TRIP_RE = /^[a-z0-9_-]{4,40}$/;
 const MEMBER_RE = /^m[a-z0-9]{1,16}$/;
 const ACT_RE = /^[a-z0-9_]{1,40}$/;
+const BASE_ID_RE = /^[a-z0-9_]{2,40}$/;
 const MAX_VOTES_PER_MEMBER = 200;
-const KV_TTL_SECONDS = 365 * 24 * 60 * 60; // 1 year
+const MAX_LOG = 50;
+const MAX_COMMENT_LEN = 300;
+const MAX_DAYS = 31;
+const MAX_ACTS_PER_DAY = 30;
+const PRESENCE_REFRESH_MS = 30_000;
+const KV_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -33,15 +52,75 @@ const json = (data, status = 200) =>
     headers: { ...CORS, "Content-Type": "application/json" },
   });
 
-const empty = () => ({ byMember: {}, updatedAt: null });
+const empty = () => ({
+  byMember: {},
+  comments: {},
+  shared: {
+    baseId: null,
+    baseUpdatedBy: null,
+    baseUpdatedAt: null,
+    itinerary: {},
+    itineraryUpdatedBy: null,
+    itineraryUpdatedAt: null,
+  },
+  presence: {},
+  log: [],
+  updatedAt: null,
+});
+
+const sanitiseItinerary = (it) => {
+  const out = {};
+  if (!it || typeof it !== "object") return out;
+  for (const [k, v] of Object.entries(it)) {
+    if (!/^\d+$/.test(k) || Number(k) >= MAX_DAYS) continue;
+    if (!Array.isArray(v)) continue;
+    out[k] = [...new Set(v.map(String).filter((x) => ACT_RE.test(x)))].slice(0, MAX_ACTS_PER_DAY);
+  }
+  return out;
+};
+
+const sanitiseActivityIds = (raw) =>
+  [...new Set((raw ?? []).map(String).filter((x) => ACT_RE.test(x)))].slice(0, MAX_VOTES_PER_MEMBER);
+
+const prependLog = (state, entry) => {
+  state.log = [entry, ...(state.log ?? [])].slice(0, MAX_LOG);
+};
+
+const readState = async (env, trip) => {
+  const raw = await env.VOTES_KV.get(trip);
+  if (!raw) return empty();
+  try {
+    const parsed = JSON.parse(raw);
+    // Backward-compat: ensure new fields exist.
+    parsed.comments ??= {};
+    parsed.shared ??= empty().shared;
+    parsed.presence ??= {};
+    parsed.log ??= [];
+    return parsed;
+  } catch {
+    return empty();
+  }
+};
+
+const writeState = (env, trip, state) =>
+  env.VOTES_KV.put(trip, JSON.stringify(state), { expirationTtl: KV_TTL_SECONDS });
 
 async function handleGet(url, env) {
   const trip = url.searchParams.get("trip") ?? "";
   if (!TRIP_RE.test(trip)) return json({ error: "Invalid trip key" }, 400);
-  const raw = await env.VOTES_KV.get(trip);
-  if (!raw) return json(empty());
-  try { return json(JSON.parse(raw)); }
-  catch { return json(empty()); }
+  const me = url.searchParams.get("me") ?? "";
+  const state = await readState(env, trip);
+
+  // Bump presence on read if `?me=` is supplied and last seen is stale.
+  if (MEMBER_RE.test(me)) {
+    const last = state.presence[me];
+    const now = Date.now();
+    if (!last || now - new Date(last).getTime() > PRESENCE_REFRESH_MS) {
+      state.presence[me] = new Date(now).toISOString();
+      await writeState(env, trip, state);
+    }
+  }
+  return json(state);
 }
 
 async function handlePost(request, url, env) {
@@ -53,36 +132,77 @@ async function handlePost(request, url, env) {
   catch { return json({ error: "Invalid JSON" }, 400); }
 
   const memberId = String(body?.memberId ?? "");
-  const rawIds = Array.isArray(body?.activityIds) ? body.activityIds : null;
-  if (!MEMBER_RE.test(memberId) || !rawIds) return json({ error: "Bad payload" }, 400);
+  if (!MEMBER_RE.test(memberId)) return json({ error: "Bad memberId" }, 400);
+  const kind = String(body?.kind ?? "votes");
 
-  const activityIds = [...new Set(
-    rawIds.map(String).filter((x) => ACT_RE.test(x)),
-  )].slice(0, MAX_VOTES_PER_MEMBER);
+  const state = await readState(env, trip);
+  const now = new Date().toISOString();
+  state.presence[memberId] = now;
 
-  const raw = await env.VOTES_KV.get(trip);
-  const existing = raw ? JSON.parse(raw) : empty();
-  existing.byMember = existing.byMember ?? {};
-  existing.byMember[memberId] = activityIds;
-  existing.updatedAt = new Date().toISOString();
+  if (kind === "votes") {
+    const ids = sanitiseActivityIds(body?.activityIds);
+    if (!Array.isArray(body?.activityIds)) return json({ error: "Bad activityIds" }, 400);
+    const before = (state.byMember[memberId] ?? []).length;
+    state.byMember[memberId] = ids;
+    prependLog(state, { ts: now, memberId, kind: "vote", summary: `Cambió sus votos (${ids.length}, antes ${before})` });
+  }
+  else if (kind === "comment") {
+    const activityId = String(body?.activityId ?? "");
+    if (!ACT_RE.test(activityId)) return json({ error: "Bad activityId" }, 400);
+    const text = String(body?.text ?? "").slice(0, MAX_COMMENT_LEN).trim();
+    state.comments[activityId] ??= {};
+    if (text) {
+      state.comments[activityId][memberId] = { text, ts: now };
+      prependLog(state, { ts: now, memberId, kind: "comment", summary: `Comentó en una actividad — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"` });
+    } else {
+      delete state.comments[activityId][memberId];
+      if (Object.keys(state.comments[activityId]).length === 0) delete state.comments[activityId];
+      prependLog(state, { ts: now, memberId, kind: "comment", summary: "Borró su comentario" });
+    }
+  }
+  else if (kind === "shared") {
+    const patch = body?.patch ?? {};
+    if (Object.prototype.hasOwnProperty.call(patch, "baseId")) {
+      const bid = patch.baseId == null ? null : String(patch.baseId);
+      if (bid !== null && !BASE_ID_RE.test(bid)) return json({ error: "Bad baseId" }, 400);
+      if (state.shared.baseId !== bid) {
+        state.shared.baseId = bid;
+        state.shared.baseUpdatedBy = memberId;
+        state.shared.baseUpdatedAt = now;
+        prependLog(state, { ts: now, memberId, kind: "base", summary: bid ? `Eligió la base "${bid}"` : "Quitó la base elegida" });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "itinerary")) {
+      const it = sanitiseItinerary(patch.itinerary);
+      state.shared.itinerary = it;
+      state.shared.itineraryUpdatedBy = memberId;
+      state.shared.itineraryUpdatedAt = now;
+      const total = Object.values(it).reduce((s, list) => s + list.length, 0);
+      prependLog(state, { ts: now, memberId, kind: "itinerary", summary: `Actualizó el itinerario (${total} actividades en ${Object.keys(it).length} días)` });
+    }
+  }
+  else if (kind !== "ping") {
+    return json({ error: "Unknown kind" }, 400);
+  }
 
-  await env.VOTES_KV.put(trip, JSON.stringify(existing), { expirationTtl: KV_TTL_SECONDS });
-  return json(existing);
+  state.updatedAt = now;
+  await writeState(env, trip, state);
+  return json(state);
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/api/votes") {
+    if (url.pathname === "/api/state") {
       if (!env.VOTES_KV) return json({ error: "KV not bound" }, 500);
       if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-      if (request.method === "GET") return handleGet(url, env);
+      if (request.method === "GET")  return handleGet(url, env);
       if (request.method === "POST") return handlePost(request, url, env);
       return json({ error: "Method not allowed" }, 405);
     }
 
-    // Anything else → static asset served from ./dist by the ASSETS binding.
+    // Anything else → static asset from ./dist via the ASSETS binding.
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return new Response("Not found", { status: 404 });
   },

@@ -3,7 +3,7 @@ import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { BASES } from "../data/bases.js";
 import { PLACES, ZONE_LABEL } from "../data/places.js";
 import { activitiesForPlace } from "../data/activities.js";
-import { daysUntil, deadlineLevel } from "../utils/dates.js";
+import { daysUntil, deadlineLevel, relativeTime } from "../utils/dates.js";
 import { MemberBar } from "./MemberBar.jsx";
 
 const fmtMin = (min) => {
@@ -92,6 +92,15 @@ export const BaseDecider = ({ state, size }) => {
       <div style={{ marginBottom: "16px" }}>
         <MemberBar state={state} />
       </div>
+
+      {/* Shared "last edited by" stamp for the family base decision. */}
+      {state.sharedMeta?.baseUpdatedBy && (
+        <p style={{ fontFamily: fonts.sans, fontSize: "12px", color: colors.textSubtle, marginBottom: "12px" }}>
+          ✏️ Última elección compartida:{" "}
+          <strong style={{ color: colors.textMuted }}>{state.memberName(state.sharedMeta.baseUpdatedBy)}</strong>{" "}
+          {relativeTime(state.sharedMeta.baseUpdatedAt)}.
+        </p>
+      )}
 
       {/* Interest selector by place */}
       <section

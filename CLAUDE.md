@@ -103,9 +103,42 @@ la nube:
 - En `ActivitiesPanel`, los votos de los demás se muestran como chips
   read-only con el nombre; sólo tu propio botón "♥ Mi voto / ♡ Votar yo"
   es clickeable.
-- **Setup del backend**: ver `DEPLOY.md` (crear KV y bindearlo como
-  `VOTES_KV` en Pages → Functions). Mientras no esté bindeado, la app
-  funciona en modo local (los POST/GET fallan silenciosamente).
+- **Setup del backend**: ver `DEPLOY.md` (crear KV y desplegar el Worker
+  con `npm run deploy`). Mientras no esté bindeado, la app funciona en
+  modo local (los POST/GET fallan silenciosamente).
+
+## Sincronización compartida ampliada (KV)
+
+La API es **`/api/state`** (un único endpoint en `worker.js`). KV guarda
+un blob por viaje con:
+- `byMember` — votos por miembro (merge por miembro en POST).
+- `comments` — `{actId: {memberId: {text, ts}}}` (merge por par).
+- `shared.{baseId, itinerary}` — last-write-wins con sello
+  `<field>UpdatedBy` / `<field>UpdatedAt`.
+- `presence` — `{memberId: ISO}` last-seen, bump en cada POST y en GET
+  con `?me=mX`.
+- `log` — ring buffer de los últimos 50 eventos (votos, comentarios,
+  cambios de base / itinerario).
+
+POST despacha por `kind`:
+- `votes` → reemplaza `byMember[memberId]`.
+- `comment` → `{memberId, activityId, text}` (text vacío = borrar).
+- `shared` → `{memberId, patch: {baseId?, itinerary?}}` (LWW).
+- `ping` → solo bumpa presencia.
+
+Hook `useTripSync` (`hooks/useTripSync.js`) orquesta GET inicial + cada
+60 s + focus, y POSTs debounced por fuente. Cada POST levanta un
+"lock" de 3 s sobre ese campo para que un GET concurrente no pise tu
+edición local.
+
+UI:
+- `MemberBar` muestra puntito verde por participante online (presence
+  reciente < 5 min).
+- `BaseDecider` e `ItineraryPanel` muestran "✏️ Última edición
+  compartida: X · hace N min".
+- `RecentActivity` (en Inicio) renderiza el log con glifos por tipo.
+- `ActivityComments` (dentro de cada tarjeta de actividad) lista
+  comentarios de otros como citas en cursiva + un input para el tuyo.
 - `state.votes` = `{ activityId: [memberId,...] }`. `toggleVote(actId, memberId)`,
   `hasVoted`, `voteCount`, `votersOf`.
 - `isInterested(actId)` = `voteCount > 0` (alguien votó). Es el derivado que

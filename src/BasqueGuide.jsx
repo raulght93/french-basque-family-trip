@@ -18,7 +18,7 @@ import { IntroPanel } from "./components/IntroPanel.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { LightboxProvider } from "./components/Lightbox.jsx";
 import { IdentityModal } from "./components/IdentityModal.jsx";
-import { useVotesSync } from "./hooks/useVotesSync.js";
+import { useTripSync } from "./hooks/useTripSync.js";
 
 // RegionMap pulls in Leaflet (~150 KB) — keep it off the critical path.
 const RegionMap = lazy(() => import("./components/RegionMap.jsx"));
@@ -36,13 +36,9 @@ export default function BasqueGuide() {
   const { printMode, triggerPrint } = usePrintMode();
   const [view, setView] = useState("inicio");
 
-  // Auto-sync of votes with the shared cloud bucket (Cloudflare KV via the
-  // Worker in worker.js at the repo root — see DEPLOY.md).
-  useVotesSync({
-    votes: state.votes,
-    setVotes: state.setVotes,
-    selfMemberId: state.selfMemberId,
-  });
+  // Auto-sync the whole shared trip state (votes + comments + base +
+  // itinerary + presence + log) with the Cloudflare Worker.
+  useTripSync({ state });
 
   // Progress badges shown on the tab bar — light visual feedback of what
   // already has content. Recomputed when votes / itinerary / base change.

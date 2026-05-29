@@ -2,13 +2,23 @@ import { useState } from "react";
 import { colors, fonts, radii } from "../styles/tokens.js";
 import { IdentityModal } from "./IdentityModal.jsx";
 
+// Members are considered online if their presence timestamp is within this
+// window. Long enough to ride out a tab switch, short enough to feel "live".
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+
 // Compact identity strip: "👤 Tú eres: Raúl · cambiar" + a roster line
-// listing the full team. Self-edit triggers the IdentityModal.
+// with a green dot for everyone currently online (from cloud presence).
 export const MemberBar = ({ state, compact = false }) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const { members, selfMemberId, memberName } = state;
+  const { members, selfMemberId, memberName, presence = {} } = state;
 
   const selfName = selfMemberId ? memberName(selfMemberId) : "—";
+  const now = Date.now();
+  const isOnline = (id) => {
+    const last = presence[id];
+    if (!last) return false;
+    return now - new Date(last).getTime() < ONLINE_WINDOW_MS;
+  };
 
   return (
     <div
@@ -49,8 +59,33 @@ export const MemberBar = ({ state, compact = false }) => {
       >
         ✎ {selfMemberId ? "Cambiar" : "Elegir"}
       </button>
-      <span style={{ flex: 1, minWidth: "180px", fontSize: "11.5px", color: colors.textSubtle, fontFamily: fonts.sans }}>
-        Familia: {members.map((m) => m.name).join(" · ")}
+      <span style={{ flex: 1, minWidth: "180px", fontSize: "11.5px", color: colors.textSubtle, fontFamily: fonts.sans, lineHeight: 1.6 }}>
+        Familia:{" "}
+        {members.map((m, i) => {
+          const online = isOnline(m.id);
+          return (
+            <span
+              key={m.id}
+              title={online ? "Online ahora" : "Sin conexión reciente"}
+              style={{ whiteSpace: "nowrap", marginRight: "2px" }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-block",
+                  width: "7px", height: "7px", borderRadius: "50%",
+                  background: online ? colors.success : "transparent",
+                  border: online ? "none" : `1px solid ${colors.borderStrong}`,
+                  marginRight: "4px", verticalAlign: "middle",
+                }}
+              />
+              <span style={{ color: online ? colors.text : colors.textSubtle, fontWeight: online ? 600 : 400 }}>
+                {m.name}
+              </span>
+              {i < members.length - 1 && <span style={{ color: colors.textSubtle }}> · </span>}
+            </span>
+          );
+        })}
       </span>
 
       <IdentityModal

@@ -5,6 +5,7 @@ import { placeById, ZONE_LABEL } from "../data/places.js";
 import { formatDow } from "../utils/dates.js";
 import { Img } from "./Img.jsx";
 import { MemberBar } from "./MemberBar.jsx";
+import { ActivityComments } from "./ActivityComments.jsx";
 
 const Chip = ({ children, bg, fg }) => (
   <span style={{ background: bg, color: fg, borderRadius: radii.pill, padding: "2px 8px", fontSize: "11px", fontWeight: 600 }}>
@@ -266,6 +267,9 @@ export const ActivitiesPanel = ({ state, size }) => {
                     </div>
                   );
                 })()}
+
+                {/* Family comments — read-only chips for others, editable input for self. */}
+                <ActivityComments state={state} activityId={a.id} />
 
                 <div style={{ marginTop: "auto", paddingTop: "4px" }}>
                   <select

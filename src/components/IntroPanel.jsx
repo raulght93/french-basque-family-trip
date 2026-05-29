@@ -5,6 +5,7 @@ import { FOODS } from "../data/food.js";
 import { PHRASES_EU, PHRASES_FR } from "../data/phrases.js";
 import { LINK_GROUPS } from "../data/links.js";
 import { Img } from "./Img.jsx";
+import { RecentActivity } from "./RecentActivity.jsx";
 
 // Welcome view: context of the region, villages, must-sees, practical info.
 // Landing tab — gives everyone a quick mental map of the area before they
@@ -208,6 +209,20 @@ export const IntroPanel = ({ state, size, onJump }) => {
           })}
         </div>
       </section>
+
+      {/* Recent activity (cloud-synced) — visible only if there's already something. */}
+      {state?.recentLog?.length > 0 && (
+        <details open style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "18px" }}>
+          <summary style={summaryStyle(size)}>
+            <span>📜 Actividad reciente</span>
+            <span aria-hidden="true" className="chevron" style={chevronStyle}>▾</span>
+          </summary>
+          <p style={{ fontSize: "12.5px", color: colors.textMuted, margin: "8px 0 10px" }}>
+            Lo que ha cambiado en el plan de la familia (sincronizado).
+          </p>
+          <RecentActivity state={state} />
+        </details>
+      )}
 
       {/* Cocina vasca — open by default */}
       <details open style={{ ...card, padding: size.isMobile ? "16px" : "20px", marginBottom: "18px" }}>

@@ -7,7 +7,7 @@ import { TEAM, memberName } from "../data/team.js";
 // Single source of truth for the trip. The roster is fixed in `data/team.js`
 // (everyone sees the same names) and each browser picks who *they* are via
 // `selfMemberId` so their votes are attributed correctly when synced to the
-// shared cloud bucket (see hooks/useVotesSync.js).
+// shared cloud bucket (see hooks/useTripSync.js).
 
 const K = (name) => `${STORAGE_PREFIX}${name}`;
 
@@ -32,6 +32,21 @@ export const useTripState = () => {
   const [cars, setCars] = useLocalStorage(K("cars"), 1);
   const [itinerary, setItinerary] = useLocalStorage(K("itinerary"), {});
   const [budgetOverrides, setBudgetOverrides] = useLocalStorage(K("budget"), {});
+
+  // ── Cloud-backed state (cached in-memory only — KV is the source of truth) ──
+  // `comments[activityId][memberId] = { text, ts }`
+  const [comments, setComments] = useState({});
+  // `presence[memberId] = ISO timestamp of last activity`
+  const [presence, setPresence] = useState({});
+  // Recent activity ring buffer (last ~50 events): `{ ts, memberId, kind, summary }`
+  const [recentLog, setRecentLog] = useState([]);
+  // Metadata on the SHARED fields (who/when last changed base or itinerary).
+  const [sharedMeta, setSharedMeta] = useState({
+    baseUpdatedBy: null,
+    baseUpdatedAt: null,
+    itineraryUpdatedBy: null,
+    itineraryUpdatedAt: null,
+  });
 
   // Members are the fixed family roster, not editable per-browser.
   const members = TEAM;
@@ -85,6 +100,29 @@ export const useTripState = () => {
   const isMyVote = (actId) => (selfMemberId ? hasVoted(actId, selfMemberId) : false);
 
   const isInterested = (actId) => voteCount(actId) > 0;
+
+  // ── Comments ──
+  const commentsForActivity = (actId) => {
+    const obj = comments[actId] || {};
+    return Object.entries(obj).map(([memberId, c]) => ({ memberId, ...c }));
+  };
+  const getMyComment = (actId) =>
+    selfMemberId ? comments[actId]?.[selfMemberId] : undefined;
+  const setMyComment = (actId, text) => {
+    if (!selfMemberId) return;
+    setComments((prev) => {
+      const next = { ...prev };
+      next[actId] = { ...(next[actId] || {}) };
+      const trimmed = (text || "").trim();
+      if (trimmed) {
+        next[actId][selfMemberId] = { text: trimmed, ts: new Date().toISOString() };
+      } else {
+        delete next[actId][selfMemberId];
+        if (Object.keys(next[actId]).length === 0) delete next[actId];
+      }
+      return next;
+    });
+  };
 
   // ── Itinerary (day index → ordered array of activity ids) ──
   const activitiesOnDay = (dayIdx) => itinerary[dayIdx] || [];
@@ -170,6 +208,12 @@ export const useTripState = () => {
     // Backwards-compat alias used by older callsites; equal to the self id.
     activeMemberId: selfMemberId,
     votes, setVotes, votersOf, voteCount, hasVoted, toggleVote, toggleMyVote, isMyVote, isInterested,
+    // Comments (per-activity, per-member)
+    comments, setComments, commentsForActivity, getMyComment, setMyComment,
+    // Cloud-only state (read-only for components; sync hook writes)
+    presence, setPresence,
+    recentLog, setRecentLog,
+    sharedMeta, setSharedMeta,
     startDate, startDateISO, setStartDate, endDate,
     nights, setNights, days,
     travelers, cars, setCars,

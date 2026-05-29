@@ -3,7 +3,7 @@ import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { ACTIVITIES, activityById, TYPE_META } from "../data/activities.js";
 import { placeById } from "../data/places.js";
 import { baseById } from "../data/bases.js";
-import { formatDow } from "../utils/dates.js";
+import { formatDow, relativeTime } from "../utils/dates.js";
 import { ProfilesBar } from "./ProfilesBar.jsx";
 
 const fmtDur = (min) => (min >= 60 ? `${Math.round((min / 60) * 10) / 10} h` : `${min} min`);
@@ -97,6 +97,14 @@ export const ItineraryPanel = ({ state, size }) => {
           💡 Arrastra las actividades entre días, o usa <strong>+ Añadir</strong> en cada día.
         </span>
       </p>
+
+      {state.sharedMeta?.itineraryUpdatedBy && (
+        <p style={{ fontFamily: fonts.sans, fontSize: "12px", color: colors.textSubtle, marginBottom: "12px" }}>
+          ✏️ Última edición compartida:{" "}
+          <strong style={{ color: colors.textMuted }}>{state.memberName(state.sharedMeta.itineraryUpdatedBy)}</strong>{" "}
+          {relativeTime(state.sharedMeta.itineraryUpdatedAt)}.
+        </p>
+      )}
 
       <ProfilesBar state={state} size={size} />
 

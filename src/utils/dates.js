@@ -27,6 +27,24 @@ export const daysUntil = (isoDate) => {
   return Math.round((target - today) / 86400000);
 };
 
+// Human-friendly relative time ("hace 2 min", "hace 3 h", "ahora") for a
+// past ISO timestamp. Returns "" when input is falsy.
+export const relativeTime = (iso) => {
+  if (!iso) return "";
+  const t = typeof iso === "string" ? new Date(iso).getTime() : iso;
+  if (!Number.isFinite(t)) return "";
+  const diff = Math.max(0, Date.now() - t);
+  const s = Math.floor(diff / 1000);
+  if (s < 30) return "ahora";
+  if (s < 60) return `hace ${s} s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d} d`;
+};
+
 // Severity level of a deadline relative to today.
 //   "past"   → already passed
 //   "soon"   → 0..14 days away

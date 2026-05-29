@@ -1,7 +1,7 @@
 // The fixed roster of family members travelling. Hard-coded (not user-editable)
 // so every browser sees the same names mapped to the same ids — required for
 // shared voting via the cloud sync (see worker.js at the repo root and
-// hooks/useVotesSync.js). To rename someone, edit this file and redeploy.
+// hooks/useTripSync.js). To rename someone, edit this file and redeploy.
 
 export const TEAM = [
   { id: "m1", name: "Antonio" },
@@ -21,7 +21,7 @@ export const memberName = (id) => memberById(id)?.name ?? id;
 // reaching the deployed site participates in the same shared vote.
 export const TRIP_KEY = "pvfamilia2026";
 
-// Base URL of the votes API. Defaults to same-origin (`/api/votes`) which is
+// Base URL of the trip-state API. Defaults to same-origin (`/api/state`) which is
 // what the Worker in `worker.js` exposes. Override at build time with
 // `VITE_API_BASE=https://other.workers.dev` if you split the API into a
 // separate Worker.

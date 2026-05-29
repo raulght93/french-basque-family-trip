@@ -1,6 +1,6 @@
 // Encode/decode the shareable slice of trip state into a `?s=<base64>` URL.
 // This is the LEGACY share mechanism (kept for one-shot link sharing). The
-// cloud sync via /api/votes is the source of truth for votes — `v` in the
+// cloud sync via /api/state is the source of truth for votes — `v` in the
 // payload is still accepted as an initial seed.
 //
 // Members and active-member id were dropped from the payload because the
