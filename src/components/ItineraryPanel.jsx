@@ -99,10 +99,10 @@ export const ItineraryPanel = ({ state, size }) => {
       </p>
 
       {state.sharedMeta?.itineraryUpdatedBy && (
-        <p style={{ fontFamily: fonts.sans, fontSize: "12px", color: colors.textSubtle, marginBottom: "12px" }}>
-          ✏️ Última edición compartida:{" "}
+        <p style={{ fontFamily: fonts.sans, fontSize: size.isMobile ? "11px" : "12px", color: colors.textSubtle, marginBottom: size.isMobile ? "8px" : "12px", lineHeight: 1.4 }}>
+          ✏️ {size.isMobile ? "" : "Última edición compartida: "}
           <strong style={{ color: colors.textMuted }}>{state.memberName(state.sharedMeta.itineraryUpdatedBy)}</strong>{" "}
-          {relativeTime(state.sharedMeta.itineraryUpdatedAt)}.
+          {relativeTime(state.sharedMeta.itineraryUpdatedAt)}
         </p>
       )}
 

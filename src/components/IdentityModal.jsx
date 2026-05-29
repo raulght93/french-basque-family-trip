@@ -1,10 +1,12 @@
 import { useEffect } from "react";
+import { useResponsive } from "../hooks/useResponsive.js";
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { TEAM } from "../data/team.js";
 
 // First-visit (and "change identity") picker. The chosen identity is locked
 // per browser and used to attribute votes to the right family member.
 export const IdentityModal = ({ open, currentId, onPick, onCancel }) => {
+  const size = useResponsive();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === "Escape" && onCancel) onCancel(); };
@@ -54,7 +56,7 @@ export const IdentityModal = ({ open, currentId, onPick, onCancel }) => {
             : "Elígete de la lista. A partir de aquí cualquier voto se atribuirá a tu nombre y se compartirá con el resto de la familia."}
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: size.isMobile ? "1fr" : "repeat(2, 1fr)", gap: "8px" }}>
           {TEAM.map((m) => {
             const active = m.id === currentId;
             return (

@@ -95,10 +95,10 @@ export const BaseDecider = ({ state, size }) => {
 
       {/* Shared "last edited by" stamp for the family base decision. */}
       {state.sharedMeta?.baseUpdatedBy && (
-        <p style={{ fontFamily: fonts.sans, fontSize: "12px", color: colors.textSubtle, marginBottom: "12px" }}>
-          ✏️ Última elección compartida:{" "}
+        <p style={{ fontFamily: fonts.sans, fontSize: size.isMobile ? "11px" : "12px", color: colors.textSubtle, marginBottom: size.isMobile ? "8px" : "12px", lineHeight: 1.4 }}>
+          ✏️ {size.isMobile ? "" : "Última elección compartida: "}
           <strong style={{ color: colors.textMuted }}>{state.memberName(state.sharedMeta.baseUpdatedBy)}</strong>{" "}
-          {relativeTime(state.sharedMeta.baseUpdatedAt)}.
+          {relativeTime(state.sharedMeta.baseUpdatedAt)}
         </p>
       )}
 
