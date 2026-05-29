@@ -17,6 +17,8 @@ import { PrintView } from "./components/PrintView.jsx";
 import { IntroPanel } from "./components/IntroPanel.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { LightboxProvider } from "./components/Lightbox.jsx";
+import { IdentityModal } from "./components/IdentityModal.jsx";
+import { useVotesSync } from "./hooks/useVotesSync.js";
 
 // RegionMap pulls in Leaflet (~150 KB) — keep it off the critical path.
 const RegionMap = lazy(() => import("./components/RegionMap.jsx"));
@@ -33,6 +35,14 @@ export default function BasqueGuide() {
   const state = useTripState();
   const { printMode, triggerPrint } = usePrintMode();
   const [view, setView] = useState("inicio");
+
+  // Auto-sync of votes with the shared cloud bucket (Cloudflare KV via the
+  // Pages Function in /functions/api/votes.js).
+  useVotesSync({
+    votes: state.votes,
+    setVotes: state.setVotes,
+    selfMemberId: state.selfMemberId,
+  });
 
   // Progress badges shown on the tab bar — light visual feedback of what
   // already has content. Recomputed when votes / itinerary / base change.
@@ -77,6 +87,13 @@ export default function BasqueGuide() {
   return (
     <LightboxProvider>
     <div style={{ background: colors.bg, minHeight: "100vh", color: colors.text }}>
+      {/* First-visit identity picker. Blocks the UI until the user picks
+          who they are; can't be dismissed on first run (no onCancel). */}
+      <IdentityModal
+        open={!state.selfMemberId}
+        currentId={null}
+        onPick={(id) => state.setSelfMemberId(id)}
+      />
       <Header state={state} size={size} />
       <ActionsBar state={state} onPrint={triggerPrint} size={size} />
       <ViewSwitcher active={view} onChange={setView} size={size} badges={badges} />

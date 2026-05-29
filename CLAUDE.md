@@ -76,17 +76,36 @@ src/
 5. **Accesibilidad** en cualquier control nuevo: `aria-label`, `aria-pressed`
    en toggles, `aria-selected` en tabs, focus ring (`shadows.ring`).
 
-## Modelo de votación (importante)
+## Modelo de votación + sync compartido (importante)
 
-Es **una sola familia**, así que el interés es **por participante individual**:
-- `state.members` = lista de participantes `{ id, name }` (renombrables,
-  **default 8**, editable con add/remove en `MemberBar`). `state.activeMemberId`
-  = quién vota ahora.
-- **`state.travelers` es derivado = `members.length`** (no hay estado/stepper
-  aparte): los participantes son la única fuente de verdad para el presupuesto.
-  El `MemberBar` aparece en Decidir base, Actividades y Presupuesto.
-- Defaults reales: `Antonio, Mariví, Jesús, María, Antonio Jr, Raúl, Ainoa,
-  Elena` — renombrables.
+Una sola familia, identidad bloqueada por navegador, votos compartidos en
+la nube:
+
+- **Roster fijo** en `data/team.js` (`TEAM`). 8 personas con ids `m1..m8`.
+  No es editable por usuario (mismo nombre en todos los navegadores). Si
+  renombras a alguien, cambia el código + redeploy.
+- `state.selfMemberId` = quién eres tú en este navegador (persistido en
+  localStorage). Si es `null`, `IdentityModal` te obliga a elegir antes
+  de hacer nada.
+- `state.travelers` = `TEAM.length` (8). No editable.
+- `state.votes` = `{ activityId: [memberId,…] }` localmente. Se sincroniza
+  con `/api/votes` (Pages Function en `functions/api/votes.js`, almacén KV
+  `VOTES_KV`, bucket = `TRIP_KEY` en `data/team.js`).
+- **Hook `useVotesSync`** (`hooks/useVotesSync.js`): GET inicial + GET en
+  focus / cada 60 s; POST debounced 600 ms cuando cambian tus propios votos.
+  En el merge, los votos del propio `selfMemberId` siempre tienen prioridad
+  local (evita pisarte mientras está en vuelo el POST).
+- **Voto atribuido**: `toggleMyVote(actId)` / `isMyVote(actId)` son las
+  APIs preferidas. `toggleVote(actId, memberId)` sigue existiendo pero la
+  UI no permite votar como otra persona.
+- `MemberBar` ahora es minimalista: "Tú eres: X · ✎ Cambiar" + roster
+  inline (`IdentityModal` para cambiar identidad).
+- En `ActivitiesPanel`, los votos de los demás se muestran como chips
+  read-only con el nombre; sólo tu propio botón "♥ Mi voto / ♡ Votar yo"
+  es clickeable.
+- **Setup del backend**: ver `DEPLOY.md` (crear KV y bindearlo como
+  `VOTES_KV` en Pages → Functions). Mientras no esté bindeado, la app
+  funciona en modo local (los POST/GET fallan silenciosamente).
 - `state.votes` = `{ activityId: [memberId,...] }`. `toggleVote(actId, memberId)`,
   `hasVoted`, `voteCount`, `votersOf`.
 - `isInterested(actId)` = `voteCount > 0` (alguien votó). Es el derivado que

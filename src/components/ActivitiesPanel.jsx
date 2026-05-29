@@ -210,35 +210,62 @@ export const ActivitiesPanel = ({ state, size }) => {
                   </div>
                 )}
 
-                {/* Per-member votes */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", paddingTop: "2px" }}>
-                  <span style={{ fontSize: "11.5px", color: colors.textMuted, fontWeight: 600 }}>Votos:</span>
-                  {state.members.map((m) => {
-                    const voted = state.hasVoted(a.id, m.id);
-                    return (
+                {/* Votes: read-only chips of who voted + your own toggle. */}
+                {(() => {
+                  const voters = state.votersOf(a.id);
+                  const others = voters.filter((id) => id !== state.selfMemberId);
+                  const iVoted = state.isMyVote(a.id);
+                  const noSelf = !state.selfMemberId;
+                  return (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", paddingTop: "2px" }}>
+                      <span style={{ fontSize: "11.5px", color: colors.textMuted, fontWeight: 600 }}>Votos:</span>
+                      {others.length === 0 && !iVoted && (
+                        <span style={{ fontSize: "11.5px", color: colors.textSubtle, fontStyle: "italic" }}>nadie todavía</span>
+                      )}
+                      {others.map((id) => (
+                        <span
+                          key={id}
+                          title={`${state.memberName(id)} ha votado`}
+                          style={{
+                            background: colors.accentSoft,
+                            color: colors.accentHover,
+                            border: `1px solid ${colors.accentBorder}`,
+                            borderRadius: radii.pill,
+                            padding: "2px 9px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            fontFamily: fonts.sans,
+                          }}
+                        >
+                          ♥ {state.memberName(id)}
+                        </span>
+                      ))}
                       <button
-                        key={m.id}
                         type="button"
-                        aria-pressed={voted}
-                        aria-label={`${voted ? "Quitar voto de" : "Votar como"} ${m.name}`}
-                        onClick={() => state.toggleVote(a.id, m.id)}
+                        aria-pressed={iVoted}
+                        disabled={noSelf}
+                        title={noSelf ? "Elige primero quién eres" : iVoted ? "Quitar mi voto" : "Votar yo"}
+                        aria-label={iVoted ? "Quitar mi voto" : "Votar yo"}
+                        onClick={() => state.toggleMyVote(a.id)}
                         style={{
-                          background: voted ? colors.accent : "transparent",
-                          color: voted ? colors.onAccent : colors.accent,
+                          background: iVoted ? colors.accent : "transparent",
+                          color: iVoted ? colors.onAccent : colors.accent,
                           border: `1px solid ${colors.accent}`,
                           borderRadius: radii.pill,
-                          padding: "4px 11px",
+                          padding: "4px 12px",
                           fontSize: "12px",
-                          fontWeight: voted ? 700 : 500,
-                          cursor: "pointer",
+                          fontWeight: 700,
+                          cursor: noSelf ? "not-allowed" : "pointer",
+                          opacity: noSelf ? 0.5 : 1,
                           fontFamily: fonts.sans,
+                          marginLeft: "auto",
                         }}
                       >
-                        {voted ? "♥ " : "♡ "}{m.name}
+                        {iVoted ? "♥ Mi voto" : "♡ Votar yo"}
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })()}
 
                 <div style={{ marginTop: "auto", paddingTop: "4px" }}>
                   <select

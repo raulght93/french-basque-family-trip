@@ -1,7 +1,10 @@
 // Encode/decode the shareable slice of trip state into a `?s=<base64>` URL.
-// Shared: chosen base, group members + their votes, start date, nights,
-// travellers, cars and itinerary. NOT shared: the private checklist (checked
-// items / custom items) — those stay local, like private notes.
+// This is the LEGACY share mechanism (kept for one-shot link sharing). The
+// cloud sync via /api/votes is the source of truth for votes — `v` in the
+// payload is still accepted as an initial seed.
+//
+// Members and active-member id were dropped from the payload because the
+// roster is now a fixed constant (`data/team.js`) shared across browsers.
 //
 // Unicode-safe base64 via TextEncoder/TextDecoder (the deprecated
 // escape/unescape trick is intentionally avoided).
@@ -34,8 +37,6 @@ const decode = (str) => {
 // Map full localStorage-ish state → compact share payload (short keys).
 const toPayload = (s) => ({
   b: s.baseId ?? null,
-  m: s.members ?? [],
-  am: s.activeMemberId ?? null,
   v: s.votes ?? {},
   d: s.startDateISO ?? null,
   n: s.nights ?? null,
@@ -47,8 +48,6 @@ const fromPayload = (p) => {
   if (!p || typeof p !== "object") return null;
   const out = {};
   if (p.b !== undefined) out.baseId = p.b;
-  if (Array.isArray(p.m)) out.members = p.m;
-  if (typeof p.am === "string") out.activeMemberId = p.am;
   if (p.v && typeof p.v === "object") out.votes = p.v;
   if (typeof p.d === "string") out.startDateISO = p.d;
   if (typeof p.n === "number") out.nights = p.n;

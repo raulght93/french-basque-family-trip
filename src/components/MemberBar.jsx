@@ -1,18 +1,14 @@
-import { colors, fonts, radii, shadows } from "../styles/tokens.js";
+import { useState } from "react";
+import { colors, fonts, radii } from "../styles/tokens.js";
+import { IdentityModal } from "./IdentityModal.jsx";
 
-// Group voting bar: who is deciding, and who you're voting as right now.
-// The active member is the one whose vote a "votar" click toggles.
+// Compact identity strip: "👤 Tú eres: Raúl · cambiar" + a roster line
+// listing the full team. Self-edit triggers the IdentityModal.
 export const MemberBar = ({ state, compact = false }) => {
-  const { members, activeMemberId } = state;
+  const [modalOpen, setModalOpen] = useState(false);
+  const { members, selfMemberId, memberName } = state;
 
-  const onRename = (m) => {
-    const name = globalThis.prompt?.("Nuevo nombre:", m.name);
-    if (name && name.trim()) state.renameMember(m.id, name.trim().slice(0, 24));
-  };
-  const onAdd = () => {
-    const name = globalThis.prompt?.("Nombre del participante:");
-    if (name && name.trim()) state.addMember(name.trim().slice(0, 24));
-  };
+  const selfName = selfMemberId ? memberName(selfMemberId) : "—";
 
   return (
     <div
@@ -20,83 +16,49 @@ export const MemberBar = ({ state, compact = false }) => {
         display: "flex",
         alignItems: "center",
         flexWrap: "wrap",
-        gap: "8px",
-        ...(compact ? {} : {
-          background: colors.bgPanel,
-          border: `1px solid ${colors.border}`,
-          borderRadius: radii.lg,
-          padding: "12px 14px",
-        }),
+        gap: "8px 12px",
+        ...(compact
+          ? {}
+          : {
+              background: colors.bgPanel,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.lg,
+              padding: "10px 14px",
+            }),
       }}
     >
-      <span style={{ fontSize: "12px", fontWeight: 700, color: colors.textMuted, fontFamily: fonts.sans }}>
-        👤 Participante:
+      <span style={{ fontSize: "13px", color: colors.textBody, fontFamily: fonts.sans }}>
+        <span aria-hidden="true" style={{ marginRight: "4px" }}>👤</span>
+        Tú eres:{" "}
+        <strong style={{ color: colors.text }}>{selfName}</strong>
       </span>
-      {members.map((m) => {
-        const active = m.id === activeMemberId;
-        return (
-          <span
-            key={m.id}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              background: active ? colors.accent : colors.bgCard,
-              color: active ? colors.onAccent : colors.textBody,
-              border: `1px solid ${active ? colors.accent : colors.border}`,
-              borderRadius: radii.pill,
-              padding: "4px 6px 4px 11px",
-              fontSize: "12.5px",
-              fontFamily: fonts.sans,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => state.setActiveMemberId(m.id)}
-              aria-pressed={active}
-              aria-label={`Votar como ${m.name}`}
-              style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", fontWeight: active ? 700 : 500, fontSize: "12.5px", fontFamily: fonts.sans, padding: 0 }}
-            >
-              {active ? "✓ " : ""}{m.name}
-            </button>
-            <button
-              type="button"
-              onClick={() => onRename(m)}
-              aria-label={`Renombrar ${m.name}`}
-              style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", opacity: 0.65, fontSize: "11px", padding: "0 2px" }}
-            >
-              ✎
-            </button>
-            {members.length > 1 && (
-              <button
-                type="button"
-                onClick={() => state.removeMember(m.id)}
-                aria-label={`Quitar ${m.name}`}
-                style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", opacity: 0.65, fontSize: "13px", padding: "0 2px" }}
-              >
-                ×
-              </button>
-            )}
-          </span>
-        );
-      })}
       <button
         type="button"
-        onClick={onAdd}
+        onClick={() => setModalOpen(true)}
         style={{
           background: "transparent",
           color: colors.accent,
           border: `1px dashed ${colors.accentBorder}`,
           borderRadius: radii.pill,
-          padding: "4px 12px",
-          fontSize: "12.5px",
+          padding: "3px 10px",
+          fontSize: "12px",
           fontWeight: 600,
           cursor: "pointer",
           fontFamily: fonts.sans,
         }}
       >
-        + Añadir
+        ✎ {selfMemberId ? "Cambiar" : "Elegir"}
       </button>
+      <span style={{ flex: 1, minWidth: "180px", fontSize: "11.5px", color: colors.textSubtle, fontFamily: fonts.sans }}>
+        Familia: {members.map((m) => m.name).join(" · ")}
+      </span>
+
+      <IdentityModal
+        open={modalOpen}
+        currentId={selfMemberId}
+        onCancel={() => setModalOpen(false)}
+        onPick={(id) => { state.setSelfMemberId(id); setModalOpen(false); }}
+      />
     </div>
   );
 };

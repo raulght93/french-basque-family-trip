@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocalStorage, STORAGE_PREFIX, clearAllStorage } from "./useLocalStorage.js";
 import { useShareableState } from "./useShareableState.js";
 import { addDays } from "../utils/dates.js";
+import { TEAM, memberName } from "../data/team.js";
 
-// Single source of truth for the trip. Deliberately light: no phases, forks or
-// tiers — a chosen base, group votes on activities, the dates, the day-by-day
-// itinerary, and headcount/cars for the budget.
+// Single source of truth for the trip. The roster is fixed in `data/team.js`
+// (everyone sees the same names) and each browser picks who *they* are via
+// `selfMemberId` so their votes are attributed correctly when synced to the
+// shared cloud bucket (see hooks/useVotesSync.js).
 
 const K = (name) => `${STORAGE_PREFIX}${name}`;
 
-// Fixed trip name (no longer user-editable).
 export const TRIP_NAME = "Viaje familiar País Vasco francés";
 
 // Default: a week in August 2026 (the proposal's hours are August; the booking
@@ -17,39 +18,27 @@ export const TRIP_NAME = "Viaje familiar País Vasco francés";
 const DEFAULT_START = "2026-08-08";
 const DEFAULT_NIGHTS = 6;
 
-// Default participants: 8 people (one family). Fully editable in the UI
-// (add / remove / rename) — the group size can change. The budget headcount
-// (`travelers`) is derived from this list, so there's a single source of truth.
-const DEFAULT_MEMBERS = [
-  { id: "m1", name: "Antonio" },
-  { id: "m2", name: "Mariví" },
-  { id: "m3", name: "Jesús" },
-  { id: "m4", name: "María" },
-  { id: "m5", name: "Antonio Jr" },
-  { id: "m6", name: "Raúl" },
-  { id: "m7", name: "Ainoa" },
-  { id: "m8", name: "Elena" },
-];
-
 const toDate = (iso) => new Date(`${iso}T00:00:00`);
 
 export const useTripState = () => {
   const share = useShareableState();
 
   const [baseId, setBaseId] = useLocalStorage(K("baseId"), null);
-  const [members, setMembers] = useLocalStorage(K("members"), DEFAULT_MEMBERS);
-  const [activeMemberId, setActiveMemberId] = useLocalStorage(K("activeMember"), "m1");
+  // Who am I? null until the user picks an identity on first visit.
+  const [selfMemberId, setSelfMemberId] = useLocalStorage(K("self"), null);
   const [votes, setVotes] = useLocalStorage(K("votes"), {}); // { activityId: [memberId,...] }
   const [startDateISO, setStartDateISO] = useLocalStorage(K("startDate"), DEFAULT_START);
   const [nights, setNights] = useLocalStorage(K("nights"), DEFAULT_NIGHTS);
   const [cars, setCars] = useLocalStorage(K("cars"), 1);
-
-  // Budget headcount = number of participants (single source of truth).
-  const travelers = members.length;
   const [itinerary, setItinerary] = useLocalStorage(K("itinerary"), {});
   const [budgetOverrides, setBudgetOverrides] = useLocalStorage(K("budget"), {});
 
-  // ── Bootstrap from a shared URL exactly once. ──
+  // Members are the fixed family roster, not editable per-browser.
+  const members = TEAM;
+  const travelers = members.length;
+
+  // Bootstrap from a shared URL exactly once (legacy share-by-URL still
+  // supported but no longer carries members/activeMemberId — those are global).
   const seededRef = useRef(false);
   useEffect(() => {
     if (seededRef.current) return;
@@ -57,8 +46,6 @@ export const useTripState = () => {
     const seed = share.readFromUrl();
     if (!seed) return;
     if (seed.baseId !== undefined) setBaseId(seed.baseId);
-    if (Array.isArray(seed.members) && seed.members.length) setMembers(seed.members);
-    if (seed.activeMemberId) setActiveMemberId(seed.activeMemberId);
     if (seed.votes) setVotes(seed.votes);
     if (seed.startDateISO) setStartDateISO(seed.startDateISO);
     if (typeof seed.nights === "number") setNights(seed.nights);
@@ -76,37 +63,27 @@ export const useTripState = () => {
   );
   const endDate = useMemo(() => addDays(startDate, nights), [startDate, nights]);
 
-  // ── Members ──
-  const addMember = (name) =>
-    setMembers((prev) => [...prev, { id: `m${Date.now()}`, name: name || `Persona ${prev.length + 1}` }]);
-  const renameMember = (id, name) =>
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, name } : m)));
-  const removeMember = (id) =>
-    setMembers((prev) => {
-      const next = prev.filter((m) => m.id !== id);
-      // Drop this member's votes.
-      setVotes((v) => {
-        const nv = {};
-        for (const [act, list] of Object.entries(v)) nv[act] = (list || []).filter((x) => x !== id);
-        return nv;
-      });
-      if (activeMemberId === id && next[0]) setActiveMemberId(next[0].id);
-      return next.length ? next : DEFAULT_MEMBERS;
-    });
-  const memberName = (id) => members.find((m) => m.id === id)?.name ?? id;
-
   // ── Votes ──
   const votersOf = (actId) => votes[actId] || [];
   const voteCount = (actId) => votersOf(actId).length;
   const hasVoted = (actId, memberId) => votersOf(actId).includes(memberId);
+  // Toggle a vote for a SPECIFIC member id. The UI restricts who can vote
+  // (only `selfMemberId`); this signature is kept generic for safety.
   const toggleVote = (actId, memberId) =>
     setVotes((prev) => {
       const list = prev[actId] || [];
-      const next = list.includes(memberId) ? list.filter((x) => x !== memberId) : [...list, memberId];
+      const next = list.includes(memberId)
+        ? list.filter((x) => x !== memberId)
+        : [...list, memberId];
       return { ...prev, [actId]: next };
     });
+  // Convenience: vote toggle "as me" (used everywhere now that identity is locked).
+  const toggleMyVote = (actId) => {
+    if (!selfMemberId) return;
+    toggleVote(actId, selfMemberId);
+  };
+  const isMyVote = (actId) => (selfMemberId ? hasVoted(actId, selfMemberId) : false);
 
-  // An activity "interesa" if anyone voted for it.
   const isInterested = (actId) => voteCount(actId) > 0;
 
   // ── Itinerary (day index → ordered array of activity ids) ──
@@ -130,8 +107,6 @@ export const useTripState = () => {
       for (const [k, list] of Object.entries(prev)) next[k] = (list || []).filter((x) => x !== actId);
       return next;
     });
-  // Move an activity to a target day at a specific index (drag-and-drop drop
-  // target). If `index` is null/omitted, appends. Works across days.
   const insertActivity = (toDay, actId, index = null) =>
     setItinerary((prev) => {
       const next = {};
@@ -142,7 +117,6 @@ export const useTripState = () => {
       next[toDay] = target;
       return next;
     });
-  // Reorder an activity within its day (dir: -1 up, +1 down).
   const moveActivityInDay = (dayIdx, actId, dir) =>
     setItinerary((prev) => {
       const list = [...(prev[dayIdx] || [])];
@@ -154,16 +128,16 @@ export const useTripState = () => {
     });
 
   // ── Quick profiles: load a ready-made plan (base + votes + itinerary). ──
-  // Replaces current votes and itinerary; every plan activity is voted by all
-  // current participants so it shows up everywhere immediately.
+  // Replaces current votes (using the current self as the voter for every
+  // plan activity) and itinerary.
   const applyProfile = (profile) => {
     if (!profile) return;
     if (profile.base) setBaseId(profile.base);
-    const memberIds = members.map((m) => m.id);
     const ids = new Set();
     Object.values(profile.days || {}).forEach((list) => (list || []).forEach((id) => ids.add(id)));
+    const voter = selfMemberId || members[0]?.id;
     const nv = {};
-    ids.forEach((id) => { nv[id] = [...memberIds]; });
+    if (voter) ids.forEach((id) => { nv[id] = [voter]; });
     setVotes(nv);
     setItinerary(profile.days || {});
   };
@@ -178,10 +152,10 @@ export const useTripState = () => {
   const [savedTick, setSavedTick] = useState(0);
   useEffect(() => {
     setSavedTick((t) => t + 1);
-  }, [baseId, members, votes, startDateISO, nights, cars, itinerary, budgetOverrides]);
+  }, [baseId, votes, startDateISO, nights, cars, itinerary, budgetOverrides, selfMemberId]);
 
   const buildShareUrl = () =>
-    share.buildShareUrl({ baseId, members, activeMemberId, votes, startDateISO, nights, cars, itinerary });
+    share.buildShareUrl({ baseId, votes, startDateISO, nights, cars, itinerary });
 
   const resetAll = () => {
     clearAllStorage();
@@ -191,9 +165,11 @@ export const useTripState = () => {
   return {
     tripName: TRIP_NAME,
     baseId, setBaseId,
-    members, addMember, renameMember, removeMember, memberName,
-    activeMemberId, setActiveMemberId,
-    votes, votersOf, voteCount, hasVoted, toggleVote, isInterested,
+    members, memberName: (id) => memberName(id),
+    selfMemberId, setSelfMemberId,
+    // Backwards-compat alias used by older callsites; equal to the self id.
+    activeMemberId: selfMemberId,
+    votes, setVotes, votersOf, voteCount, hasVoted, toggleVote, toggleMyVote, isMyVote, isInterested,
     startDate, startDateISO, setStartDate, endDate,
     nights, setNights, days,
     travelers, cars, setCars,

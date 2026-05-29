@@ -35,23 +35,24 @@ const DeadlineChip = ({ iso, label }) => {
 };
 
 export const BaseDecider = ({ state, size }) => {
-  const { isInterested, toggleVote, hasVoted, activeMemberId } = state;
+  const { isInterested, toggleVote, hasVoted, selfMemberId } = state;
 
   const placesWithActivities = useMemo(
     () => PLACES.filter((p) => activitiesForPlace(p.id).length > 0),
     [],
   );
 
-  // Chip "on" = the active voter has voted for at least one activity there.
-  const placeVotedByActive = (placeId) =>
-    activitiesForPlace(placeId).some((a) => hasVoted(a.id, activeMemberId));
+  // Chip "on" = I (the current self) have voted for at least one activity there.
+  const placeVotedByMe = (placeId) =>
+    !!selfMemberId && activitiesForPlace(placeId).some((a) => hasVoted(a.id, selfMemberId));
   const togglePlace = (placeId) => {
+    if (!selfMemberId) return; // guard: identity not picked yet.
     const acts = activitiesForPlace(placeId);
-    const anyOn = acts.some((a) => hasVoted(a.id, activeMemberId));
+    const anyOn = acts.some((a) => hasVoted(a.id, selfMemberId));
     acts.forEach((a) => {
-      const on = hasVoted(a.id, activeMemberId);
-      if (anyOn && on) toggleVote(a.id, activeMemberId);
-      if (!anyOn && !on) toggleVote(a.id, activeMemberId);
+      const on = hasVoted(a.id, selfMemberId);
+      if (anyOn && on) toggleVote(a.id, selfMemberId);
+      if (!anyOn && !on) toggleVote(a.id, selfMemberId);
     });
   };
   // Distinct voters across a place's activities (any member).
@@ -107,7 +108,7 @@ export const BaseDecider = ({ state, size }) => {
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           {placesWithActivities.map((p) => {
-            const on = placeVotedByActive(p.id);
+            const on = placeVotedByMe(p.id);
             const voters = placeVoters(p.id);
             return (
               <button
