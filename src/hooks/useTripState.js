@@ -13,9 +13,10 @@ const K = (name) => `${STORAGE_PREFIX}${name}`;
 
 export const TRIP_NAME = "Viaje familiar País Vasco francés";
 
-// Default: a week in August 2026 (the proposal's hours are August; the booking
-// deadlines fall in July/August). 6 nights → 7 days.
-const DEFAULT_START = "2026-08-08";
+// Default: Wed 19 → Mon 25 August 2026 (6 nights, 7 days). Day 1 (Wed) is
+// mostly the 7-hour drive from Ciudad Real; Day 7 (Mon) is the return.
+// Friday 21 is the day of the Sare market (16:30–20:30 in August).
+const DEFAULT_START = "2026-08-19";
 const DEFAULT_NIGHTS = 6;
 
 const toDate = (iso) => new Date(`${iso}T00:00:00`);

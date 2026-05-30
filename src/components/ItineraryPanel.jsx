@@ -157,12 +157,12 @@ export const ItineraryPanel = ({ state, size }) => {
                       📍 Hoy
                     </span>
                   )}
-                  {i === 0 && base?.fromHome && (
+                  {(i === 0 || i === state.nights) && base?.fromHome && (
                     <span
-                      title={`${base.fromHome.km} km · ~${Math.round(base.fromHome.min / 60 * 10) / 10}h en coche desde casa`}
+                      title={`${base.fromHome.km} km · ~${Math.round(base.fromHome.min / 60 * 10) / 10}h en coche ${i === 0 ? "desde" : "de vuelta a"} casa`}
                       style={{ fontFamily: fonts.sans, fontSize: "11px", fontWeight: 700, color: colors.warningText, background: colors.warningSoft, border: `1px solid ${colors.warning}`, borderRadius: radii.pill, padding: "2px 8px" }}
                     >
-                      🚙 Llegada · ~{Math.round(base.fromHome.min / 60)}h coche
+                      🚙 {i === 0 ? "Llegada" : "Regreso"} · ~{Math.round(base.fromHome.min / 60)}h coche
                     </span>
                   )}
                 </h3>

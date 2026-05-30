@@ -12,7 +12,7 @@ const TRIVIAL_DRIVE_ONE_WAY = 18; // ≤ this is too close to bother grouping
 //   • Same place spread across multiple days (suggest grouping).
 //   • Day with too much round-trip driving from the base.
 // Pure derivation — no side effects, no API calls.
-const computeWarnings = (itinerary, base) => {
+const computeWarnings = (itinerary, base, nights) => {
   const warnings = [];
 
   // 1. Activities present in more than one day.
@@ -93,32 +93,41 @@ const computeWarnings = (itinerary, base) => {
     }
   }
 
-  // 4. Day 0 (arrival) sanity. A 7-hour drive from Ciudad Real means only
-  //    the late afternoon is usable; anything booked or long is risky.
-  const day0 = itinerary?.[0] || itinerary?.["0"];
-  if (Array.isArray(day0) && day0.length > 0 && base) {
+  // 4. Day 1 (arrival) and last day (return) sanity. A 7-hour drive from
+  //    Ciudad Real means only an afternoon or morning is usable on those
+  //    days; anything booked or long-duration is risky.
+  const checkTravelDay = (idx, label) => {
+    const list = itinerary?.[idx] ?? itinerary?.[String(idx)];
+    if (!Array.isArray(list) || list.length === 0 || !base) return;
     const homeMin = base?.fromHome?.min ?? 0;
     const homeH = Math.floor(homeMin / 60);
-    const heavy = day0
+    const heavy = list
       .map(activityById)
       .filter((a) => a && (a.booking || (a.durationMin || 0) > 90));
-    if (heavy.length > 0) {
-      const names = heavy.map((a) => `«${a.name}»`).join(", ");
-      warnings.push({
-        id: "arrival-day-heavy",
-        kind: "arrival",
-        icon: "🚙",
-        text: `El Día 1 es el de llegada: ~${homeH} h en coche desde ${HOME.name}, así que en el mejor caso solo tienes la tarde. ${heavy.length === 1 ? "Esta actividad puede no entrar" : "Estas actividades pueden no entrar"}: ${names}. Considéralas para otro día.`,
-      });
-    }
-  }
+    if (heavy.length === 0) return;
+    const names = heavy.map((a) => `«${a.name}»`).join(", ");
+    const prefix = label === "llegada"
+      ? `Día 1 (llegada)`
+      : `Día ${idx + 1} (regreso)`;
+    warnings.push({
+      id: `travel-day-${label}`,
+      kind: label,
+      icon: "🚙",
+      text: `${prefix}: ~${homeH} h en coche ${label === "llegada" ? "desde" : "hacia"} ${HOME.name}. ${heavy.length === 1 ? "Esta actividad puede no entrar" : "Estas actividades pueden no entrar"}: ${names}.`,
+    });
+  };
+  checkTravelDay(0, "llegada");
+  if (typeof nights === "number" && nights > 0) checkTravelDay(nights, "regreso");
 
   return warnings;
 };
 
 export const ItineraryWarnings = ({ state, size }) => {
   const base = baseById(state.baseId);
-  const warnings = useMemo(() => computeWarnings(state.itinerary, base), [state.itinerary, base]);
+  const warnings = useMemo(
+    () => computeWarnings(state.itinerary, base, state.nights),
+    [state.itinerary, base, state.nights],
+  );
   if (warnings.length === 0) return null;
 
   return (

@@ -30,13 +30,23 @@ export const PROFILES = [
     base: "maison_sare",
     desc: "Foco en el mar: San Juan de Luz, Hendaya, Biarritz y Hondarribia.",
     days: {
+      // D1 = miércoles 19 de agosto: llegada, solo tarde. Paseo por Sare.
       0: ["casco_sare"],
-      1: ["sanjuan_costa"],
-      2: ["hendaye_playa", "hondarribia_casco"],
-      3: ["biarritz_costa"],
-      4: ["guethary_pueblo", "bayonne_ciudad"],
-      5: ["saintpee_lago"],
-      6: ["tren_larrun"],
+      // D2 = jueves: el tren de La Rhune como plato fuerte mientras todos
+      // van descansados (mejor que dejarlo al día del regreso).
+      1: ["tren_larrun"],
+      // D3 = viernes: bahía de San Juan de Luz; por la tarde podéis pasar
+      // por el mercado de Sare al volver (16:30-20:30).
+      2: ["sanjuan_costa"],
+      // D4 = sábado: combo de costa, cruce a Hondarribia desde Hendaya.
+      3: ["hendaye_playa", "hondarribia_casco"],
+      // D5 = domingo: Biarritz tranquilo, paseo marítimo + Rocher.
+      4: ["biarritz_costa"],
+      // D6 = lunes: Guéthary + Bayonne (chocolatería y catedral).
+      5: ["guethary_pueblo", "bayonne_ciudad"],
+      // D7 = martes 25: día de regreso. Mañana suave en el lago, comida
+      // y carretera. Nada que requiera reserva.
+      6: ["saintpee_lago"],
     },
   },
   {

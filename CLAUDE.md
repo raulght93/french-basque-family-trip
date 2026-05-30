@@ -6,7 +6,9 @@ Documentación interna para futuras sesiones. Léela antes de tocar nada.
 
 Aplicación React (Vite) de **una sola página**: guía de viaje + ayuda a la
 decisión para un viaje **familiar de una semana** al **País Vasco francés**
-(agosto 2026). Sin backend; todo el estado vive en React + localStorage.
+(Mié 19 → Lun 25 agosto 2026, 6 noches / 7 días). Sin backend propio:
+todo el estado vive en React + localStorage + un Cloudflare Worker con KV
+para el viaje compartido.
 Pensada para desplegar en Cloudflare Pages (igual que `africa-trip-planning`,
 del que reutiliza la infraestructura).
 
