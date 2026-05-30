@@ -5,6 +5,7 @@ import { placeById } from "../data/places.js";
 import { baseById } from "../data/bases.js";
 import { formatDow, relativeTime } from "../utils/dates.js";
 import { ProfilesBar } from "./ProfilesBar.jsx";
+import { ItineraryWarnings } from "./ItineraryWarnings.jsx";
 
 const fmtDur = (min) => (min >= 60 ? `${Math.round((min / 60) * 10) / 10} h` : `${min} min`);
 
@@ -106,6 +107,8 @@ export const ItineraryPanel = ({ state, size }) => {
         </p>
       )}
 
+      <ItineraryWarnings state={state} size={size} />
+
       <ProfilesBar state={state} size={size} />
 
       <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr" : "1fr", gap: "14px" }}>
@@ -138,8 +141,11 @@ export const ItineraryPanel = ({ state, size }) => {
                   </span>
                 </h3>
                 {actIds.length > 0 && (
-                  <span style={{ fontSize: "11.5px", color: colors.textSubtle }}>
-                    🚗 {fmtDur(drive)} · ⏱️ {fmtDur(onSite)}
+                  <span style={{ fontSize: "11.5px", color: colors.textSubtle, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ color: drive > 180 ? colors.dangerText : "inherit", fontWeight: drive > 180 ? 700 : 400 }}>
+                      🚗 {fmtDur(drive)}{drive > 180 ? " ⚠️" : ""}
+                    </span>
+                    <span>· ⏱️ {fmtDur(onSite)}</span>
                   </span>
                 )}
               </div>

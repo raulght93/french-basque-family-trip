@@ -106,7 +106,13 @@ export const useTripSync = ({ state, enabled = true }) => {
     baseId, setBaseId,
     itinerary, setItinerary,
     setPresence, setRecentLog, setSharedMeta,
+    simulationMode = false,
   } = state;
+
+  // Synchronously-readable simulation flag for closures that don't re-bind
+  // on every render (the GET effect captures pullRemote via ref).
+  const simRef = useRef(simulationMode);
+  simRef.current = simulationMode;
 
   const [status, setStatus] = useState("idle"); // idle | syncing | ok | error
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -122,7 +128,10 @@ export const useTripSync = ({ state, enabled = true }) => {
   setters.current = { setVotes, setComments, setBaseId, setItinerary, setPresence, setRecentLog, setSharedMeta };
 
   // ── GET helper ──
-  const pullRemote = useRef(async () => {
+  // `forceAdoptShared` bypasses the simulation-mode guard for shared.baseId
+  // and shared.itinerary — used when the user explicitly chooses "discard
+  // my sandbox and restore the family's plan".
+  const pullRemote = useRef(async ({ forceAdoptShared = false } = {}) => {
     setStatus("syncing");
     try {
       const res = await fetch(stateUrl(selfMemberId || ""));
@@ -130,6 +139,7 @@ export const useTripSync = ({ state, enabled = true }) => {
       const data = await res.json();
       const s = setters.current;
       const now = Date.now();
+      const adoptShared = forceAdoptShared || !simRef.current;
 
       // Always-applied (we don't author these): presence, recentLog.
       s.setPresence(data.presence || {});
@@ -152,15 +162,17 @@ export const useTripSync = ({ state, enabled = true }) => {
       }
 
       // shared.baseId — adopt only when remote has an opinion AND its
-      // timestamp is newer than our last local change.
+      // timestamp is newer than our last local change. Sim mode normally
+      // blocks adoption (`adoptShared` is false there); `forceAdoptShared`
+      // overrides this for the "discard sandbox" flow.
       const remoteBaseAt = data.shared?.baseUpdatedAt ? new Date(data.shared.baseUpdatedAt).getTime() : 0;
-      if (remoteBaseAt && remoteBaseAt > lockUntil.current.baseId) {
+      if (adoptShared && remoteBaseAt && (forceAdoptShared || remoteBaseAt > lockUntil.current.baseId)) {
         s.setBaseId(data.shared.baseId);
       }
 
       // shared.itinerary — same idea.
       const remoteItAt = data.shared?.itineraryUpdatedAt ? new Date(data.shared.itineraryUpdatedAt).getTime() : 0;
-      if (remoteItAt && remoteItAt > lockUntil.current.itinerary) {
+      if (adoptShared && remoteItAt && (forceAdoptShared || remoteItAt > lockUntil.current.itinerary) ) {
         s.setItinerary(data.shared.itinerary || {});
       }
 
@@ -208,6 +220,7 @@ export const useTripSync = ({ state, enabled = true }) => {
   // ── POST: baseId (last-write-wins) ──
   useEffect(() => {
     if (!enabled || !selfMemberId || !readyRef.current) return undefined;
+    if (simulationMode) return undefined; // sandboxed locally
     if (baseId === lastPostedBaseId.current) return undefined;
     const t = globalThis.setTimeout(async () => {
       lastPostedBaseId.current = baseId;
@@ -225,11 +238,12 @@ export const useTripSync = ({ state, enabled = true }) => {
       } catch (e) { setStatus("error"); if (typeof globalThis.console !== "undefined") globalThis.console.warn("sync (POST base) failed:", e); }
     }, POST_DEBOUNCE_MS);
     return () => globalThis.clearTimeout(t);
-  }, [baseId, selfMemberId, enabled]);
+  }, [baseId, selfMemberId, enabled, simulationMode]);
 
   // ── POST: itinerary (last-write-wins) ──
   useEffect(() => {
     if (!enabled || !selfMemberId || !readyRef.current) return undefined;
+    if (simulationMode) return undefined; // sandboxed locally
     const sig = JSON.stringify(itinerary || {});
     if (sig === JSON.stringify(lastPostedItinerary.current || {})) return undefined;
     const t = globalThis.setTimeout(async () => {
@@ -247,7 +261,7 @@ export const useTripSync = ({ state, enabled = true }) => {
       } catch (e) { setStatus("error"); if (typeof globalThis.console !== "undefined") globalThis.console.warn("sync (POST itinerary) failed:", e); }
     }, POST_DEBOUNCE_MS);
     return () => globalThis.clearTimeout(t);
-  }, [itinerary, selfMemberId, enabled]);
+  }, [itinerary, selfMemberId, enabled, simulationMode]);
 
   // ── POST: my comments (one POST per changed activity) ──
   useEffect(() => {
@@ -277,5 +291,9 @@ export const useTripSync = ({ state, enabled = true }) => {
     return () => globalThis.clearTimeout(t);
   }, [comments, selfMemberId, enabled]);
 
-  return { status, lastSyncedAt };
+  // External API for forcing a refresh (e.g. when the user discards their
+  // simulation sandbox and wants to snap back to the family's plan).
+  const refresh = (opts = {}) => pullRemote.current(opts);
+
+  return { status, lastSyncedAt, refresh };
 };

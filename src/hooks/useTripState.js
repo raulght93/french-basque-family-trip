@@ -165,20 +165,23 @@ export const useTripState = () => {
       return { ...prev, [dayIdx]: list };
     });
 
-  // ── Quick profiles: load a ready-made plan (base + votes + itinerary). ──
-  // Replaces current votes (using the current self as the voter for every
-  // plan activity) and itinerary.
+  // ── Quick profiles: load a ready-made plan (base + itinerary). ──
+  // The user's votes are NEVER touched — this is just a "load this draft
+  // itinerary" action. Lets the family experiment freely with different
+  // plans without losing anyone's vote history.
   const applyProfile = (profile) => {
     if (!profile) return;
     if (profile.base) setBaseId(profile.base);
-    const ids = new Set();
-    Object.values(profile.days || {}).forEach((list) => (list || []).forEach((id) => ids.add(id)));
-    const voter = selfMemberId || members[0]?.id;
-    const nv = {};
-    if (voter) ids.forEach((id) => { nv[id] = [voter]; });
-    setVotes(nv);
     setItinerary(profile.days || {});
   };
+
+  // ── Simulation mode ──
+  // When `simulationMode` is true, the sync hook suspends POSTs of the
+  // SHARED fields (baseId + itinerary) and skips adopting remote updates
+  // for them. Votes and comments still sync normally — only the day plan
+  // is sandboxed locally so the user can try things out without altering
+  // what the rest of the family sees.
+  const [simulationMode, setSimulationMode] = useState(false);
 
   // ── Budget overrides ──
   const setBudgetField = (key, value) =>
@@ -220,6 +223,7 @@ export const useTripState = () => {
     itinerary, activitiesOnDay, isScheduled, dayOfActivity,
     assignActivity, unassignActivity, insertActivity, moveActivityInDay,
     applyProfile,
+    simulationMode, setSimulationMode,
     budgetOverrides, setBudgetField,
     savedTick,
     buildShareUrl, resetAll,

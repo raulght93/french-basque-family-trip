@@ -18,6 +18,7 @@ import { IntroPanel } from "./components/IntroPanel.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { LightboxProvider } from "./components/Lightbox.jsx";
 import { IdentityModal } from "./components/IdentityModal.jsx";
+import { SimulationBanner } from "./components/SimulationBanner.jsx";
 import { useTripSync } from "./hooks/useTripSync.js";
 
 // RegionMap pulls in Leaflet (~150 KB) — keep it off the critical path.
@@ -38,7 +39,16 @@ export default function BasqueGuide() {
 
   // Auto-sync the whole shared trip state (votes + comments + base +
   // itinerary + presence + log) with the Cloudflare Worker.
-  useTripSync({ state });
+  const sync = useTripSync({ state });
+
+  // "Compartir" exits simulation; the post-effects in useTripSync will then
+  // push the current local baseId + itinerary up to the family.
+  const shareSimulation = () => state.setSimulationMode(false);
+  // "Descartar" exits simulation and force-pulls the family's plan back in.
+  const discardSimulation = () => {
+    state.setSimulationMode(false);
+    sync.refresh({ forceAdoptShared: true });
+  };
 
   // Progress badges shown on the tab bar — light visual feedback of what
   // already has content. Recomputed when votes / itinerary / base change.
@@ -92,6 +102,7 @@ export default function BasqueGuide() {
       />
       <Header state={state} size={size} />
       <ActionsBar state={state} onPrint={triggerPrint} size={size} />
+      <SimulationBanner state={state} onShare={shareSimulation} onDiscard={discardSimulation} />
       <ViewSwitcher active={view} onChange={setView} size={size} badges={badges} />
 
       <main
