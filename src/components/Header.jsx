@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { colors, fonts, radii } from "../styles/tokens.js";
 import { formatDate, formatDateShort } from "../utils/dates.js";
 import { baseById } from "../data/bases.js";
+import { computeTripAlerts, sortedAlerts } from "../utils/tripAlerts.js";
 import { IdentityModal } from "./IdentityModal.jsx";
+import { TripStatus } from "./TripStatus.jsx";
+import { AlertsPill } from "./AlertsPill.jsx";
 
 const miniBtn = {
   width: "22px",
@@ -79,6 +82,15 @@ export const Header = ({ state, size }) => {
   let baseLabel = "Base sin decidir";
   if (base) baseLabel = size.isMobile ? base.name : `${base.name} · ${base.town}`;
 
+  const today = useMemo(() => new Date(), []);
+  // Recomputed when the underlying state changes (votes/itinerary/base etc.
+  // — the relevant data sources of computeTripAlerts).
+  const alerts = useMemo(
+    () => sortedAlerts(computeTripAlerts(state)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.baseId, state.itinerary, state.selfMemberId, state.startDateISO, state.nights],
+  );
+
   return (
     <header
       style={{
@@ -101,7 +113,10 @@ export const Header = ({ state, size }) => {
             🏔️ País Vasco Francés
             {size.isMobile ? "" : " · Viaje en familia"}
           </div>
-          <IdentityChip state={state} />
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <AlertsPill alerts={alerts} size={size} />
+            <IdentityChip state={state} />
+          </div>
         </div>
 
         <h1
@@ -130,6 +145,7 @@ export const Header = ({ state, size }) => {
           }}
         >
           <span>📅 {dates}</span>
+          <TripStatus state={state} size={size} today={today} />
           <NightStepper nights={state.nights} setNights={state.setNights} />
           <span>🏠 {baseLabel}</span>
           {!size.isMobile && (

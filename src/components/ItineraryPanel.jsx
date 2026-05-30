@@ -111,11 +111,18 @@ export const ItineraryPanel = ({ state, size }) => {
 
       <ProfilesBar state={state} size={size} />
 
+      {/* Compare the calendar date (yyyy-mm-dd) so the "Hoy" badge survives
+          hours/timezones differences. */}
       <div style={{ display: "grid", gridTemplateColumns: size.isDesktop ? "1fr 1fr" : "1fr", gap: "14px" }}>
         {state.days.map((d, i) => {
           const actIds = state.activitiesOnDay(i);
           const { onSite, drive } = dayTotals(actIds);
           const isDayDragOver = dragOver === `day:${i}`;
+          const todayIso = new Date().toISOString().slice(0, 10);
+          const isToday = d.toISOString().slice(0, 10) === todayIso;
+          let borderColor = colors.border;
+          if (isDayDragOver) borderColor = colors.accent;
+          else if (isToday) borderColor = colors.success;
           return (
             <section
               key={d.toISOString().slice(0, 10)}
@@ -125,7 +132,7 @@ export const ItineraryPanel = ({ state, size }) => {
               onDrop={(e) => dropOnDay(e, i)}
               style={{
                 background: colors.bgCard,
-                border: `2px solid ${isDayDragOver ? colors.accent : colors.border}`,
+                border: `2px solid ${borderColor}`,
                 borderRadius: radii.lg,
                 padding: "16px",
                 boxShadow: shadows.sm,
@@ -133,12 +140,17 @@ export const ItineraryPanel = ({ state, size }) => {
                 ...(isDayDragOver ? { background: colors.accentSoft } : null),
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
-                <h3 style={{ fontFamily: fonts.serif, fontSize: "21px", color: colors.text }}>
-                  Día {i + 1}
-                  <span style={{ fontFamily: fonts.sans, fontSize: "13px", color: colors.textMuted, fontWeight: 400, marginLeft: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px", flexWrap: "wrap", gap: "6px" }}>
+                <h3 style={{ fontFamily: fonts.serif, fontSize: "21px", color: colors.text, display: "inline-flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
+                  <span>Día {i + 1}</span>
+                  <span style={{ fontFamily: fonts.sans, fontSize: "13px", color: colors.textMuted, fontWeight: 400 }}>
                     {formatDow(d)}
                   </span>
+                  {isToday && (
+                    <span style={{ fontFamily: fonts.sans, fontSize: "11px", fontWeight: 700, color: colors.onAccent, background: colors.success, borderRadius: radii.pill, padding: "2px 8px" }}>
+                      📍 Hoy
+                    </span>
+                  )}
                 </h3>
                 {actIds.length > 0 && (
                   <span style={{ fontSize: "11.5px", color: colors.textSubtle, display: "inline-flex", alignItems: "center", gap: "6px" }}>
