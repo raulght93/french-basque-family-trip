@@ -34,13 +34,19 @@ export const ItineraryPanel = ({ state, size }) => {
   const base = baseById(state.baseId);
   const [dragOver, setDragOver] = useState(null); // e.g. "day:3", "item:3:1", "unsched"
 
+  // Drive is counted per UNIQUE place (one round-trip from the base per
+  // place visited), not per activity — otherwise two activities at the same
+  // town would double-count the drive.
   const dayTotals = (actIds) => {
     let onSite = 0;
     let drive = 0;
+    const seenPlaces = new Set();
     actIds.forEach((id) => {
       const a = activityById(id);
       if (!a) return;
       onSite += a.durationMin || 0;
+      if (seenPlaces.has(a.placeId)) return;
+      seenPlaces.add(a.placeId);
       const d = base?.distances?.[a.placeId];
       if (d) drive += d.min * 2;
     });

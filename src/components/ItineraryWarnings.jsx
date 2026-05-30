@@ -5,6 +5,7 @@ import { placeById, ZONE_LABEL } from "../data/places.js";
 import { baseById } from "../data/bases.js";
 
 const HEAVY_DRIVE_MIN = 180; // round-trip total per day → "mucho coche"
+const TRIVIAL_DRIVE_ONE_WAY = 18; // ≤ this is too close to bother grouping
 
 // Heuristic checks over the current itinerary:
 //   • Same activity id appearing in more than one day (data anomaly).
@@ -34,46 +35,59 @@ const computeWarnings = (itinerary, base) => {
   }
 
   // 2. Same place split across multiple days (≥2 activities, ≥2 days).
+  //    Filtered: places that are the base itself or very close to it (≤18 min
+  //    one-way) don't generate a warning — grouping them wouldn't save real
+  //    drive time, and Sare-as-base would always trip this otherwise.
   const placeMap = {}; // placeId → { days: Set, acts: Set }
   for (const [k, list] of Object.entries(itinerary || {})) {
     for (const actId of list || []) {
       const a = activityById(actId);
       if (!a) continue;
-      const entry = (placeMap[a.placeId] = placeMap[a.placeId] || { days: new Set(), acts: new Set() });
-      entry.days.add(Number(k));
-      entry.acts.add(actId);
+      placeMap[a.placeId] = placeMap[a.placeId] || { days: new Set(), acts: new Set() };
+      placeMap[a.placeId].days.add(Number(k));
+      placeMap[a.placeId].acts.add(actId);
     }
   }
   for (const [placeId, info] of Object.entries(placeMap)) {
-    if (info.days.size > 1 && info.acts.size > 1) {
-      const place = placeById(placeId);
-      const days = [...info.days].sort((a, b) => a - b);
-      warnings.push({
-        id: `split:${placeId}`,
-        kind: "split-place",
-        icon: "💡",
-        text: `«${place?.name ?? placeId}» (${ZONE_LABEL[place?.zone] || "—"}) está partido en ${info.days.size} días (${days.map((d) => `Día ${d + 1}`).join(", ")}). Podríais agrupar esas visitas en un mismo día para ahorrar coche.`,
-      });
-    }
+    if (info.days.size <= 1 || info.acts.size <= 1) continue;
+    const oneWay = base?.distances?.[placeId]?.min ?? 0;
+    if (oneWay <= TRIVIAL_DRIVE_ONE_WAY) continue;
+    const place = placeById(placeId);
+    const days = [...info.days].sort((a, b) => a - b);
+    const dayLabels = days.map((d) => `Día ${d + 1}`).join(", ");
+    const zoneLabel = ZONE_LABEL[place?.zone] || "—";
+    warnings.push({
+      id: `split:${placeId}`,
+      kind: "split-place",
+      icon: "💡",
+      text: `«${place?.name ?? placeId}» (${zoneLabel}) está partido en ${info.days.size} días (${dayLabels}). Podríais agrupar esas visitas en un mismo día para ahorrar coche.`,
+    });
   }
 
-  // 3. Heavy drive days. Only meaningful if a base is chosen.
+  // 3. Heavy drive days. Only meaningful if a base is chosen. Drive is
+  //    counted per UNIQUE place (one round-trip per place) so multiple
+  //    activities at the same town aren't double-counted.
   if (base) {
     for (const [k, list] of Object.entries(itinerary || {})) {
       let drive = 0;
+      const seenPlaces = new Set();
       for (const actId of list || []) {
         const a = activityById(actId);
-        const d = a && base.distances?.[a.placeId];
-        if (d) drive += d.min * 2; // round-trip
+        if (!a) continue;
+        if (seenPlaces.has(a.placeId)) continue;
+        seenPlaces.add(a.placeId);
+        const d = base.distances?.[a.placeId];
+        if (d) drive += d.min * 2;
       }
       if (drive > HEAVY_DRIVE_MIN) {
         const h = Math.floor(drive / 60);
         const m = drive % 60;
+        const fmt = m ? `${h}h ${m}min` : `${h}h`;
         warnings.push({
           id: `heavy:${k}`,
           kind: "heavy-drive",
           icon: "🚗",
-          text: `Día ${Number(k) + 1}: ${h}h${m ? ` ${m}min` : ""} ida-y-vuelta desde la base. Igual está demasiado cargado.`,
+          text: `Día ${Number(k) + 1}: ${fmt} ida-y-vuelta desde la base. Igual está demasiado cargado.`,
         });
       }
     }

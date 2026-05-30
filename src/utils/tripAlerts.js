@@ -78,14 +78,20 @@ export const computeTripAlerts = (state) => {
     }
   }
 
-  // Heavy drive days (one per offending day).
+  // Heavy drive days (one per offending day). Drive counted per UNIQUE
+  // place visited so a day with multiple activities in the same town
+  // doesn't double-count.
   const base = state.baseId ? baseById(state.baseId) : null;
   if (base && state.itinerary) {
     for (const [k, list] of Object.entries(state.itinerary)) {
       let drive = 0;
+      const seenPlaces = new Set();
       for (const actId of list || []) {
         const a = activityById(actId);
-        const d = a && base.distances?.[a.placeId];
+        if (!a) continue;
+        if (seenPlaces.has(a.placeId)) continue;
+        seenPlaces.add(a.placeId);
+        const d = base.distances?.[a.placeId];
         if (d) drive += d.min * 2;
       }
       if (drive > HEAVY_DRIVE_MIN) {

@@ -44,15 +44,23 @@ export const PROFILES = [
     name: "Naturaleza y montaña",
     glyph: "🥾",
     base: "maison_sare",
-    desc: "Tren de La Rhune, Pottoks Bleus, cuevas, Pas de Roland y senderos.",
+    desc: "Tren de La Rhune, Valle de Xareta, Pas de Roland, cuevas y senderos.",
     days: {
+      // Llegada suave + Ascain (al pie de La Rhune).
       0: ["casco_sare", "ascain_pueblo"],
+      // Día estrella en la montaña.
       1: ["tren_larrun"],
-      2: ["pottoks_bleus"],
+      // Valle de Xareta del tirón: caminata por los Pottoks + cueva de las
+      // brujas en Zugarramurdi (en vez de partirlo en dos días).
+      2: ["pottoks_bleus", "cuevas_zugarramurdi"],
+      // Cuevas en la propia Sare.
       3: ["cuevas_sare"],
-      4: ["itxassou_pasroland", "villa_arnaga"],
+      // Cambo (Villa Arnaga) + Itxassou (Pas de Roland) en el mismo eje.
+      4: ["villa_arnaga", "itxassou_pasroland"],
+      // Ciudadela en el camino jacobeo.
       5: ["sjpp_pueblo"],
-      6: ["cuevas_zugarramurdi"],
+      // Cierre tranquilo en el lago.
+      6: ["saintpee_lago"],
     },
   },
   {
