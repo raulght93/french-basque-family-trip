@@ -121,6 +121,7 @@ export const ACTIVITIES = [
       "Sendero que recorre Sare, Ainhoa (Francia) y Zugarramurdi, Urdax " +
       "(Navarra): el Valle de Xareta, tierra de brujas y contrabandistas, con " +
       "sus ponis azules (pottoks).",
+    img: `${WIKI}/2/2b/Pootok_arra_Orbelaunen.JPG/500px-Pootok_arra_Orbelaunen.JPG`,
     lowMobilityOk: false,
     splitOption:
       "El sendero no tiene alternativa accesible. Mientras el grupo camina, quien lo " +
@@ -162,6 +163,7 @@ export const ACTIVITIES = [
     desc:
       "Pueblo de los pimientos colgados al sol. Río Latsa, iglesia de Saint-" +
       "Étienne y Château des Barons.",
+    img: `${WIKI}/1/11/Biarritz_Piments.jpg/500px-Biarritz_Piments.jpg`,
   },
   {
     id: "ainhoa_pueblo",
@@ -209,6 +211,7 @@ export const ACTIVITIES = [
     desc:
       "Villa elegante del surf europeo: Grande Plage, el Rocher de la Vierge, " +
       "el faro y la Côte des Basques.",
+    img: `${WIKI}/b/b6/Rocher_de_la_Vierge_-_Biarritz.jpg/500px-Rocher_de_la_Vierge_-_Biarritz.jpg`,
   },
   {
     id: "sanjuan_costa",
@@ -386,6 +389,67 @@ export const ACTIVITIES = [
       "El acceso al Pas de Roland es por sendero y terreno irregular. Alternativa: " +
       "mientras unos van, quien lo necesite puede quedarse en el centro de Itxassou " +
       "(plaza, iglesia con galerías de madera, frontón y cafés; todo llano).",
+  },
+
+  // ── Extras: lado español + interior profundo ──
+  {
+    id: "donostia_pintxos",
+    name: "Donostia: la Concha y pintxos en la Parte Vieja",
+    placeId: "donostia",
+    type: "ciudad",
+    price: 0,
+    hours: "Todo el día",
+    durationMin: 300,
+    access: "full",
+    accessNote:
+      "Paseo de la Concha llano, accesible y con baranda. La Parte Vieja " +
+      "tiene calles empedradas pero llanas; el Peine del Viento tiene " +
+      "escalones tallados en la roca al final.",
+    booking: false,
+    desc:
+      "Plan grande: bajar a la Concha por la mañana, comer pintxos en la " +
+      "Parte Vieja (bar Néstor por la tortilla, La Cuchara de San Telmo, " +
+      "Borda Berri…), Peine del Viento al atardecer.",
+  },
+  {
+    id: "pasaia_paseo",
+    name: "Pasai Donibane: el pueblo de Víctor Hugo",
+    placeId: "pasaia",
+    type: "pueblo",
+    price: 1,
+    hours: "Todo el día",
+    durationMin: 120,
+    access: "partial",
+    accessNote:
+      "El cruce en lancha cuesta ~1 € y dura 2 min. Calle única empedrada " +
+      "y llana en Donibane; algunas casas tienen escalones a su puerta.",
+    booking: false,
+    bookingNote: "Combina muy bien con Hondarribia y/o Donostia el mismo día.",
+    desc:
+      "Pasai Donibane es una sola calle entre el monte y el canal, con " +
+      "casas de armadores. Se cruza en lancha a San Pedro en 2 min. Una " +
+      "joyita rapidísima, ideal de paso entre Hondarribia y Donostia.",
+  },
+  {
+    id: "baigorry_irouleguy",
+    name: "Saint-Étienne-de-Baïgorry + bodega de Irouléguy",
+    placeId: "baigorry",
+    type: "pueblo",
+    price: 8,
+    hours: "Bodegas: visitas concertadas",
+    durationMin: 180,
+    access: "partial",
+    accessNote:
+      "Pueblo llano con puente romano y galerías de madera en la iglesia. " +
+      "Las bodegas suelen tener escaleras de bajada a la barrica.",
+    booking: true,
+    bookingNote:
+      "Conviene reservar la visita a la cave (Cave d'Irouléguy o Domaine " +
+      "Brana). Cata + recorrido ~8-12 €/persona.",
+    desc:
+      "Pueblo profundo de la Baja Navarra francesa: puente romano, iglesia " +
+      "y los viñedos de Irouléguy (el único AOC vasco francés). Plan tranquilo " +
+      "con cata para los mayores.",
   },
 ];
 

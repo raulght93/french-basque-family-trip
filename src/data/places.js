@@ -224,6 +224,47 @@ export const PLACES = [
       "bahía desde Hendaya.",
     img: `${WIKI}/7/75/Fontarrabie_depuis_Hendaye_2012.jpg/500px-Fontarrabie_depuis_Hendaye_2012.jpg`,
   },
+
+  // ── Puntos extra (lado español + interior profundo) ──
+  {
+    id: "donostia",
+    name: "San Sebastián (Donostia)",
+    zone: "costa",
+    country: "ES",
+    lat: 43.3183,
+    lng: -1.9812,
+    desc:
+      "La capital de Gipuzkoa. La Concha — una de las playas urbanas más " +
+      "bonitas del mundo —, el Peine del Viento, la Parte Vieja con sus " +
+      "pintxos y el monte Igueldo. Plan redondo de día completo.",
+    img: `${WIKI}/f/f4/San_Sebasti%C3%A1n_-_Ayuntamiento_10.jpg/500px-San_Sebasti%C3%A1n_-_Ayuntamiento_10.jpg`,
+  },
+  {
+    id: "pasaia",
+    name: "Pasaia (Pasajes)",
+    zone: "costa",
+    country: "ES",
+    lat: 43.3275,
+    lng: -1.9226,
+    desc:
+      "Antigua villa marinera donde Víctor Hugo se quedó un mes: dos pueblos " +
+      "(Donibane y San Pedro) enfrentados, separados por un canal y unidos " +
+      "por una lancha que cruza en 2 min. Pintoresco y muy fotografiable.",
+    img: `${WIKI}/8/8b/Pasai_Donibane%2C_Euskal_Herria.jpg/500px-Pasai_Donibane%2C_Euskal_Herria.jpg`,
+  },
+  {
+    id: "baigorry",
+    name: "Saint-Étienne-de-Baïgorry",
+    zone: "montana",
+    country: "FR",
+    lat: 43.1742,
+    lng: -1.3493,
+    desc:
+      "Pueblo de montaña al pie de los Pirineos, capital de la AOP Irouléguy " +
+      "(el único vino vasco francés). Puente romano, iglesia con galerías de " +
+      "madera y bodegas para catar. Ideal para escapar de la costa un día.",
+    img: `${WIKI}/e/ed/Saint_Etienne_de_Ba%C3%AFgorry_Maison.jpg/500px-Saint_Etienne_de_Ba%C3%AFgorry_Maison.jpg`,
+  },
   {
     id: "itxassou",
     name: "Itxassou (Itsasu)",

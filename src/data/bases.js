@@ -11,6 +11,14 @@
 // `pricePerNight` is a placeholder estimate (the proposal has no prices) and
 // is editable in the budget view — treat it as a default, not a fact.
 
+// Where the family starts the trip from (used to draw the inbound route on
+// the map, and to warn that Day 0 is mostly a drive).
+export const HOME = {
+  name: "Ciudad Real",
+  lat: 38.9863,
+  lng: -3.9272,
+};
+
 export const BASES = [
   {
     id: "maison_sare",
@@ -51,6 +59,9 @@ export const BASES = [
       isturitz:     { km: 42, min: 52 },
       hondarribia:  { km: 31, min: 37 },
       itxassou:     { km: 21, min: 28 },
+      donostia:     { km: 46, min: 45 },
+      pasaia:       { km: 43, min: 43 },
+      baigorry:     { km: 49, min: 55 },
     },
   },
   {
@@ -93,6 +104,9 @@ export const BASES = [
       isturitz:     { km: 15, min: 21 },
       hondarribia:  { km: 67, min: 61 },
       itxassou:     { km: 15, min: 25 },
+      donostia:     { km: 82, min: 68 },
+      pasaia:       { km: 79, min: 67 },
+      baigorry:     { km: 28, min: 38 },
     },
   },
 ];

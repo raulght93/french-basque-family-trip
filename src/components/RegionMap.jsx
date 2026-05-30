@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useTheme } from "../hooks/useTheme.js";
 import { PLACES, placeById, ZONE_LABEL } from "../data/places.js";
-import { BASES, baseById } from "../data/bases.js";
+import { BASES, baseById, HOME } from "../data/bases.js";
 import { ACTIVITIES, activityById, activitiesForPlace } from "../data/activities.js";
 import { colors, fonts, radii } from "../styles/tokens.js";
 import { formatDow } from "../utils/dates.js";
@@ -78,6 +78,7 @@ export const RegionMap = ({ state, size }) => {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const routeCache = useRef(new Map()); // signature → latlngs
+  const [showInbound, setShowInbound] = useState(false);
 
   const base = baseById(state.baseId);
 
@@ -204,7 +205,42 @@ export const RegionMap = ({ state, size }) => {
 
     dayPlans.forEach((plan) => { drawRoute(plan); });
 
-    if (allPts.length) map.fitBounds(L.latLngBounds(allPts), { padding: [45, 45], maxZoom: 12 });
+    // Optional inbound route from HOME → chosen base. Toggle is off by
+    // default because it zooms out a lot (Ciudad Real is ~700 km away).
+    if (showInbound && base) {
+      const homeIcon = L.divIcon({
+        className: "fbt-home",
+        html: `<div style="width:32px;height:32px;border-radius:50%;background:${bg};border:2px solid ${resolveColor(colors.warning)};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 1px 4px rgba(0,0,0,0.35);">🏠</div>`,
+        iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -14],
+      });
+      L.marker([HOME.lat, HOME.lng], { icon: homeIcon, title: HOME.name })
+        .addTo(map)
+        .bindPopup(`<div style="font-family:'DM Sans',sans-serif;min-width:150px;">
+          <div style="font-weight:700;font-size:13px;">🏠 ${HOME.name}</div>
+          <div style="font-size:11px;color:#888;">Punto de salida del viaje</div>
+        </div>`);
+
+      const inboundPts = [[HOME.lat, HOME.lng], [base.lat, base.lng]];
+      const fallback = L.polyline(inboundPts, { color: resolveColor(colors.warning), weight: 3, opacity: 0.5, dashArray: "4,8" }).addTo(map);
+      inboundPts.forEach((pt) => allPts.push(pt));
+
+      const sig = `inbound|${inboundPts.map((p) => p.join(",")).join("|")}`;
+      const draw = async () => {
+        let latlngs = routeCache.current.get(sig);
+        if (!latlngs) {
+          try {
+            latlngs = await fetchRoute(inboundPts);
+            routeCache.current.set(sig, latlngs);
+          } catch { return; }
+        }
+        if (cancelled || !mapRef.current) return;
+        map.removeLayer(fallback);
+        L.polyline(latlngs, { color: resolveColor(colors.warning), weight: 4, opacity: 0.8 }).addTo(map);
+      };
+      draw();
+    }
+
+    if (allPts.length) map.fitBounds(L.latLngBounds(allPts), { padding: [45, 45], maxZoom: showInbound ? 9 : 12 });
 
     return () => {
       cancelled = true;
@@ -212,19 +248,33 @@ export const RegionMap = ({ state, size }) => {
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedTheme, state.baseId, dayPlans, placeDayBadge]);
+  }, [resolvedTheme, state.baseId, dayPlans, placeDayBadge, showInbound]);
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <h2 style={{ fontFamily: fonts.serif, fontSize: size.isMobile ? "26px" : "32px", color: colors.text, marginBottom: "6px" }}>
         El mapa
       </h2>
-      <p style={{ fontFamily: fonts.sans, fontSize: "14px", color: colors.textMuted, marginBottom: "16px", lineHeight: 1.5 }}>
+      <p style={{ fontFamily: fonts.sans, fontSize: "14px", color: colors.textMuted, marginBottom: "10px", lineHeight: 1.5 }}>
         🏠 bases candidatas · ⛰️ montaña · 🏖️ costa · 🪄 Valle de Xareta.{" "}
         {base
           ? "Cada color es un día del itinerario; las rutas siguen las carreteras reales (ida y vuelta a la base)."
           : "Elige base y monta el itinerario para ver las rutas de cada día."}
       </p>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 14px", alignItems: "center", marginBottom: "10px" }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12.5px", color: colors.textBody, fontFamily: fonts.sans, cursor: base ? "pointer" : "not-allowed", opacity: base ? 1 : 0.5 }}>
+          <input
+            type="checkbox"
+            checked={showInbound}
+            disabled={!base}
+            onChange={(e) => setShowInbound(e.target.checked)}
+            style={{ accentColor: colors.warning, cursor: base ? "pointer" : "not-allowed" }}
+          />
+          🚙 Mostrar el viaje desde {HOME.name}
+          {base?.fromHome ? ` (${base.fromHome.km} km · ~${Math.round(base.fromHome.min / 60)}h)` : ""}
+        </label>
+      </div>
 
       <div
         ref={containerRef}

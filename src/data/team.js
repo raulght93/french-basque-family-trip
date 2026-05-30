@@ -3,11 +3,14 @@
 // shared voting via the cloud sync (see worker.js at the repo root and
 // hooks/useTripSync.js). To rename someone, edit this file and redeploy.
 
+// Note: ids are stable. If someone leaves (e.g. m4 was "María"), we drop the
+// entry from this list but keep the id slot empty so any leftover votes by
+// that id in KV stay attributable to the historical name and don't clobber
+// the renumbering of the remaining members.
 export const TEAM = [
   { id: "m1", name: "Antonio" },
   { id: "m2", name: "Mariví" },
   { id: "m3", name: "Jesús" },
-  { id: "m4", name: "María" },
   { id: "m5", name: "Antonio Jr" },
   { id: "m6", name: "Raúl" },
   { id: "m7", name: "Ainoa" },
