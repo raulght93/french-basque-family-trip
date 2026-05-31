@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { BASES } from "../data/bases.js";
 import { PLACES, ZONE_LABEL } from "../data/places.js";
-import { activitiesForPlace } from "../data/activities.js";
+import { activitiesForPlace, activityById } from "../data/activities.js";
 import { daysUntil, deadlineLevel, relativeTime } from "../utils/dates.js";
 import { MemberBar } from "./MemberBar.jsx";
 
@@ -62,13 +62,28 @@ export const BaseDecider = ({ state, size }) => {
     return s.size;
   };
 
-  // Score uses places anyone is interested in; fallback to all if no votes.
-  const anyInterest = placesWithActivities.some((p) =>
-    activitiesForPlace(p.id).some((a) => isInterested(a.id)),
-  );
-  const considered = placesWithActivities.filter((p) =>
-    anyInterest ? activitiesForPlace(p.id).some((a) => isInterested(a.id)) : true,
-  );
+  // What counts for the score: any place that someone has voted on OR that
+  // already appears in the (shared) itinerary. We add the itinerary as a
+  // signal so a quick-plan / simulation that fills the days re-prices each
+  // base immediately, even if no one has voted yet.
+  const placesOfInterest = useMemo(() => {
+    const s = new Set();
+    placesWithActivities.forEach((p) => {
+      if (activitiesForPlace(p.id).some((a) => isInterested(a.id))) s.add(p.id);
+    });
+    Object.values(state.itinerary || {}).forEach((list) => {
+      (list || []).forEach((actId) => {
+        const pid = activityById(actId)?.placeId;
+        if (pid) s.add(pid);
+      });
+    });
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.votes, state.itinerary, placesWithActivities]);
+
+  const considered = placesOfInterest.size > 0
+    ? placesWithActivities.filter((p) => placesOfInterest.has(p.id))
+    : placesWithActivities;
 
   const scored = BASES.map((base) => {
     const legs = considered.map((p) => ({ place: p, d: base.distances[p.id] || null }));
@@ -149,9 +164,9 @@ export const BaseDecider = ({ state, size }) => {
           })}
         </div>
         <p style={{ fontSize: "12px", color: colors.textSubtle, marginTop: "10px", fontStyle: "italic" }}>
-          {anyInterest
-            ? `Comparando con ${considered.length} destino(s) con votos. El número 👤 son los votantes de cada sitio.`
-            : "Sin votos se comparan todos los destinos. Votad los que os importen para afinar."}
+          {placesOfInterest.size > 0
+            ? `Comparando con ${considered.length} destino(s) entre votos e itinerario. El número 👤 son los votantes de cada sitio.`
+            : "Sin votos ni itinerario montado se comparan todos los destinos. Votad o programad lo que os importe para afinar."}
         </p>
       </section>
 

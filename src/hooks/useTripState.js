@@ -31,7 +31,10 @@ const toDate = (iso) => new Date(`${iso}T00:00:00`);
 export const useTripState = () => {
   const share = useShareableState();
 
-  const [baseId, setBaseId] = useLocalStorage(K("baseId"), null);
+  // Default to Maison (Sare) — already reserved, the favourite. Users who
+  // explicitly clear/change the base have their pick preserved (the
+  // migration only fires once and only on `null`).
+  const [baseId, setBaseId] = useLocalStorage(K("baseId"), "maison_sare");
   // Who am I? null until the user picks an identity on first visit.
   const [selfMemberId, setSelfMemberId] = useLocalStorage(K("self"), null);
   const [votes, setVotes] = useLocalStorage(K("votes"), {}); // { activityId: [memberId,...] }
@@ -101,6 +104,10 @@ export const useTripState = () => {
     if (!applied.has("cars_default_2") && cars === 1) {
       setCars(2);
       pending.push("cars_default_2");
+    }
+    if (!applied.has("base_default_maison_sare") && baseId == null) {
+      setBaseId("maison_sare");
+      pending.push("base_default_maison_sare");
     }
     if (pending.length) setAppliedMigrations([...(appliedMigrations || []), ...pending]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
