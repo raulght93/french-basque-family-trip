@@ -19,6 +19,13 @@ export const TRIP_NAME = "Viaje familiar País Vasco francés";
 const DEFAULT_START = "2026-08-19";
 const DEFAULT_NIGHTS = 6;
 
+// Previous defaults that early users may still have cached in localStorage.
+// We migrate them once on load to the current DEFAULT_START so the whole
+// family ends up on the same dates even if they opened the app before the
+// trip dates were finalised. Users who explicitly picked another date are
+// left alone (their value isn't in this set).
+const LEGACY_DEFAULT_START_DATES = new Set(["2026-08-08"]);
+
 const toDate = (iso) => new Date(`${iso}T00:00:00`);
 
 export const useTripState = () => {
@@ -60,14 +67,23 @@ export const useTripState = () => {
     if (seededRef.current) return;
     seededRef.current = true;
     const seed = share.readFromUrl();
-    if (!seed) return;
-    if (seed.baseId !== undefined) setBaseId(seed.baseId);
-    if (seed.votes) setVotes(seed.votes);
-    if (seed.startDateISO) setStartDateISO(seed.startDateISO);
-    if (typeof seed.nights === "number") setNights(seed.nights);
-    if (typeof seed.cars === "number") setCars(seed.cars);
-    if (seed.itinerary) setItinerary(seed.itinerary);
-    share.clearUrlParam();
+    if (seed) {
+      if (seed.baseId !== undefined) setBaseId(seed.baseId);
+      if (seed.votes) setVotes(seed.votes);
+      if (seed.startDateISO) setStartDateISO(seed.startDateISO);
+      if (typeof seed.nights === "number") setNights(seed.nights);
+      if (typeof seed.cars === "number") setCars(seed.cars);
+      if (seed.itinerary) setItinerary(seed.itinerary);
+      share.clearUrlParam();
+    }
+    // One-shot migration: bump browsers still on a previous default start
+    // date to the current one. We use the raw `seed.startDateISO` if the
+    // share URL provided one, otherwise the persisted `startDateISO`.
+    const effective = seed?.startDateISO ?? startDateISO;
+    if (LEGACY_DEFAULT_START_DATES.has(effective)) {
+      setStartDateISO(DEFAULT_START);
+      if (nights !== DEFAULT_NIGHTS) setNights(DEFAULT_NIGHTS);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
