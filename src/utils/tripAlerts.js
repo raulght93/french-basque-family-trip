@@ -4,7 +4,7 @@
 // in the Header renders.
 
 import { BASES, baseById } from "../data/bases.js";
-import { activityById } from "../data/activities.js";
+import { ACTIVITIES, activityById } from "../data/activities.js";
 import { AUTO_ITEMS } from "../data/checklistItems.js";
 import { daysUntil } from "./dates.js";
 import { STORAGE_PREFIX } from "../hooks/useLocalStorage.js";
@@ -75,6 +75,30 @@ export const computeTripAlerts = (state) => {
           detail: `Si quieres anularla, hazlo antes del ${base.bookingDeadline}.`,
         });
       }
+    }
+  }
+
+  // Popular votes that nobody scheduled. Votes are advisory now (they no
+  // longer pull into the budget or the comparator) so we surface them
+  // explicitly here. Threshold: 2+ voters on an activity not in the
+  // itinerary.
+  if (state.votes && state.itinerary) {
+    const scheduledIds = new Set();
+    Object.values(state.itinerary).forEach((list) => (list || []).forEach((id) => scheduledIds.add(id)));
+    const popular = ACTIVITIES
+      .map((a) => ({ a, votes: (state.votes[a.id] || []).length }))
+      .filter(({ a, votes }) => votes >= 2 && !scheduledIds.has(a.id))
+      .sort((x, y) => y.votes - x.votes);
+    if (popular.length > 0) {
+      const top = popular.slice(0, 3).map(({ a, votes }) => `«${a.name}» (${votes}👤)`).join(", ");
+      const more = popular.length > 3 ? ` y ${popular.length - 3} más` : "";
+      out.push({
+        id: "popular_unscheduled",
+        severity: "info",
+        icon: "🎯",
+        title: `${popular.length} actividad${popular.length === 1 ? "" : "es"} con votos sin programar`,
+        detail: `${top}${more}. Considera meter alguna en el itinerario.`,
+      });
     }
   }
 

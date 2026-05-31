@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { colors, fonts } from "../styles/tokens.js";
 import { baseById } from "../data/bases.js";
-import { ACTIVITIES, activityById } from "../data/activities.js";
+import { activityById } from "../data/activities.js";
 import { placeById } from "../data/places.js";
 import { CATEGORIES } from "../data/checklistItems.js";
 import { computeBudget, BUDGET_DEFAULTS } from "../utils/budget.js";
@@ -16,12 +16,13 @@ export const PrintView = ({ state }) => {
   const base = baseById(state.baseId);
   const cl = useChecklist({ cars: state.cars });
 
+  // Only what's scheduled counts for the printed budget. Votes are advisory
+  // and never feed the totals — same model as the live BudgetPanel.
   const selectedActivities = useMemo(() => {
-    const ids = new Set(ACTIVITIES.filter((a) => state.isInterested(a.id)).map((a) => a.id));
+    const ids = new Set();
     Object.values(state.itinerary).forEach((list) => (list || []).forEach((id) => ids.add(id)));
     return [...ids].map((id) => activityById(id)).filter(Boolean);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.votes, state.itinerary]);
+  }, [state.itinerary]);
 
   const placeDistances = useMemo(() => {
     if (!base) return [];

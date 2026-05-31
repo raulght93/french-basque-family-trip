@@ -53,9 +53,13 @@ export const ItineraryPanel = ({ state, size }) => {
     return { onSite, drive };
   };
 
-  const unscheduledInterest = ACTIVITIES.filter(
-    (a) => state.isInterested(a.id) && !state.isScheduled(a.id),
-  );
+  // Activities with at least one vote that haven't been scheduled yet —
+  // sorted by vote count desc so the most popular bubble up. Votes here
+  // are purely informational (they don't drive any cost calc); this section
+  // exists so the family notices a popular pick that's drifted off the plan.
+  const unscheduledInterest = ACTIVITIES
+    .filter((a) => state.isInterested(a.id) && !state.isScheduled(a.id))
+    .sort((a, b) => state.voteCount(b.id) - state.voteCount(a.id));
   const unscheduledAll = ACTIVITIES.filter((a) => !state.isScheduled(a.id));
 
   const updateDragOver = (key) => {
@@ -315,9 +319,9 @@ export const ItineraryPanel = ({ state, size }) => {
           }}
         >
           <div style={{ fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase", color: colors.accent, fontWeight: 700, marginBottom: "10px" }}>
-            ♥ Marcadas sin asignar ({unscheduledInterest.length})
+            ♥ Con votos sin programar ({unscheduledInterest.length})
             <span style={{ marginLeft: "10px", fontSize: "10.5px", color: colors.textSubtle, fontWeight: 500, letterSpacing: "0.5px" }}>
-              · suelta aquí para quitarlas de un día
+              · ordenadas por votos · suelta una aquí para quitarla de un día
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -338,6 +342,17 @@ export const ItineraryPanel = ({ state, size }) => {
                   <span aria-hidden="true">{tm.glyph}</span>
                   <span style={{ flex: 1, minWidth: 140, fontSize: "13.5px", color: colors.text }}>
                     {a.name} <span style={{ color: colors.textMuted, fontSize: "12px" }}>· {placeById(a.placeId)?.name}</span>
+                  </span>
+                  <span
+                    title={`${state.voteCount(a.id)} voto${state.voteCount(a.id) === 1 ? "" : "s"}`}
+                    style={{
+                      background: colors.accentSoft, color: colors.accentHover,
+                      border: `1px solid ${colors.accentBorder}`,
+                      borderRadius: radii.pill, padding: "1px 8px",
+                      fontSize: "11px", fontWeight: 700, fontFamily: fonts.sans,
+                    }}
+                  >
+                    ♥ {state.voteCount(a.id)}
                   </span>
                   <select
                     data-print="hide"

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { baseById } from "../data/bases.js";
-import { ACTIVITIES, activityById } from "../data/activities.js";
+import { activityById } from "../data/activities.js";
 import { computeBudget, BUDGET_DEFAULTS } from "../utils/budget.js";
 import { relativeTime } from "../utils/dates.js";
 import { MemberBar } from "./MemberBar.jsx";
@@ -40,13 +40,14 @@ export const BudgetPanel = ({ state, size }) => {
   const o = state.budgetOverrides;
   const get = (k, d) => o[k] ?? d;
 
-  // Selected = voted by anyone OR scheduled in the itinerary.
+  // What's actually paid for: only activities that are SCHEDULED. Votes
+  // are advisory; an activity nobody scheduled won't appear on the
+  // ticket bill nor pull a round-trip from the base.
   const selectedActivities = useMemo(() => {
-    const ids = new Set(ACTIVITIES.filter((a) => state.isInterested(a.id)).map((a) => a.id));
+    const ids = new Set();
     Object.values(state.itinerary).forEach((list) => (list || []).forEach((id) => ids.add(id)));
     return [...ids].map((id) => activityById(id)).filter(Boolean);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.votes, state.itinerary]);
+  }, [state.itinerary]);
 
   // One round-trip leg per distinct place among selected activities.
   const placeDistances = useMemo(() => {

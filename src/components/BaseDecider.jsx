@@ -62,15 +62,13 @@ export const BaseDecider = ({ state, size }) => {
     return s.size;
   };
 
-  // What counts for the score: any place that someone has voted on OR that
-  // already appears in the (shared) itinerary. We add the itinerary as a
-  // signal so a quick-plan / simulation that fills the days re-prices each
-  // base immediately, even if no one has voted yet.
+  // What counts for the score: the places that will ACTUALLY be visited,
+  // i.e. those programmed in the shared itinerary. Votes are kept as a
+  // representative signal (chip on/off, 👤 count) but never feed into the
+  // km / minute totals — otherwise a popular wishlist would distort the
+  // comparison even if nobody scheduled it.
   const placesOfInterest = useMemo(() => {
     const s = new Set();
-    placesWithActivities.forEach((p) => {
-      if (activitiesForPlace(p.id).some((a) => isInterested(a.id))) s.add(p.id);
-    });
     Object.values(state.itinerary || {}).forEach((list) => {
       (list || []).forEach((actId) => {
         const pid = activityById(actId)?.placeId;
@@ -78,8 +76,7 @@ export const BaseDecider = ({ state, size }) => {
       });
     });
     return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.votes, state.itinerary, placesWithActivities]);
+  }, [state.itinerary]);
 
   const considered = placesOfInterest.size > 0
     ? placesWithActivities.filter((p) => placesOfInterest.has(p.id))
@@ -165,8 +162,8 @@ export const BaseDecider = ({ state, size }) => {
         </div>
         <p style={{ fontSize: "12px", color: colors.textSubtle, marginTop: "10px", fontStyle: "italic" }}>
           {placesOfInterest.size > 0
-            ? `Comparando con ${considered.length} destino(s) entre votos e itinerario. El número 👤 son los votantes de cada sitio.`
-            : "Sin votos ni itinerario montado se comparan todos los destinos. Votad o programad lo que os importe para afinar."}
+            ? `Comparando con ${considered.length} destino(s) del itinerario. El número 👤 son los votantes (representativo, no afecta a los kilómetros).`
+            : "Sin itinerario montado se comparan todos los destinos. Programa días en «Itinerario» para afinar la comparación."}
         </p>
       </section>
 
