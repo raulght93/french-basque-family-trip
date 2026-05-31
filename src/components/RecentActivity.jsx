@@ -8,6 +8,7 @@ const KIND_GLYPH = {
   comment: "💬",
   base: "🏠",
   itinerary: "📅",
+  budget: "💶",
 };
 
 export const RecentActivity = ({ state, max = 10 }) => {

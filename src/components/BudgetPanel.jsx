@@ -3,6 +3,7 @@ import { colors, fonts, radii, shadows } from "../styles/tokens.js";
 import { baseById } from "../data/bases.js";
 import { ACTIVITIES, activityById } from "../data/activities.js";
 import { computeBudget, BUDGET_DEFAULTS } from "../utils/budget.js";
+import { relativeTime } from "../utils/dates.js";
 import { MemberBar } from "./MemberBar.jsx";
 
 const Stepper = ({ label, value, set, min = 0, max = 99, step = 1, suffix }) => (
@@ -79,9 +80,17 @@ export const BudgetPanel = ({ state, size }) => {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      <h2 style={{ fontFamily: fonts.serif, fontSize: size.isMobile ? "26px" : "32px", color: colors.text, marginBottom: "16px" }}>
+      <h2 style={{ fontFamily: fonts.serif, fontSize: size.isMobile ? "26px" : "32px", color: colors.text, marginBottom: size.isMobile ? "8px" : "12px" }}>
         Presupuesto
       </h2>
+
+      {state.sharedMeta?.budgetUpdatedBy && (
+        <p style={{ fontFamily: fonts.sans, fontSize: size.isMobile ? "11px" : "12px", color: colors.textSubtle, marginBottom: size.isMobile ? "10px" : "14px", lineHeight: 1.4 }}>
+          ✏️ {size.isMobile ? "" : "Última edición compartida: "}
+          <strong style={{ color: colors.textMuted }}>{state.memberName(state.sharedMeta.budgetUpdatedBy)}</strong>{" "}
+          {relativeTime(state.sharedMeta.budgetUpdatedAt)}
+        </p>
+      )}
 
       {/* Trip params */}
       <section style={{ ...card, marginBottom: "16px" }}>

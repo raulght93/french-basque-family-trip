@@ -62,11 +62,30 @@ const empty = () => ({
     itinerary: {},
     itineraryUpdatedBy: null,
     itineraryUpdatedAt: null,
+    budget: {},
+    budgetUpdatedBy: null,
+    budgetUpdatedAt: null,
   },
   presence: {},
   log: [],
   updatedAt: null,
 });
+
+// Whitelisted budget keys. We only persist these to avoid storing arbitrary
+// data on KV; everything else in the incoming patch is dropped.
+const BUDGET_KEYS = ["pricePerNight", "foodPerDay", "fuelPricePerL", "consumption", "includeHomeTrip"];
+
+const sanitiseBudget = (b) => {
+  const out = {};
+  if (!b || typeof b !== "object") return out;
+  for (const k of BUDGET_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(b, k)) continue;
+    const v = b[k];
+    if (typeof v === "boolean") out[k] = v;
+    else if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100000) out[k] = v;
+  }
+  return out;
+};
 
 const sanitiseItinerary = (it) => {
   const out = {};
@@ -179,6 +198,18 @@ async function handlePost(request, url, env) {
       state.shared.itineraryUpdatedAt = now;
       const total = Object.values(it).reduce((s, list) => s + list.length, 0);
       prependLog(state, { ts: now, memberId, kind: "itinerary", summary: `Actualizó el itinerario (${total} actividades en ${Object.keys(it).length} días)` });
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "budget")) {
+      const budget = sanitiseBudget(patch.budget);
+      const prev = state.shared.budget || {};
+      // Only log if it actually changed (avoid noise from no-op pushes).
+      const changedKeys = BUDGET_KEYS.filter((k) => prev[k] !== budget[k]);
+      state.shared.budget = budget;
+      state.shared.budgetUpdatedBy = memberId;
+      state.shared.budgetUpdatedAt = now;
+      if (changedKeys.length > 0) {
+        prependLog(state, { ts: now, memberId, kind: "budget", summary: `Ajustó el presupuesto (${changedKeys.join(", ")})` });
+      }
     }
   }
   else if (kind !== "ping") {

@@ -105,6 +105,7 @@ export const useTripSync = ({ state, enabled = true }) => {
     comments, setComments,
     baseId, setBaseId,
     itinerary, setItinerary,
+    budgetOverrides, setBudgetOverrides,
     setPresence, setRecentLog, setSharedMeta,
     simulationMode = false,
   } = state;
@@ -119,13 +120,14 @@ export const useTripSync = ({ state, enabled = true }) => {
 
   // Refs to coordinate state across effects without dep-array gymnastics.
   const readyRef = useRef(false);
-  const lockUntil = useRef({ votes: 0, baseId: 0, itinerary: 0, comments: 0 });
+  const lockUntil = useRef({ votes: 0, baseId: 0, itinerary: 0, comments: 0, budget: 0 });
   const lastPostedVotes = useRef("");
   const lastPostedComments = useRef("{}");
   const lastPostedBaseId = useRef(undefined);
   const lastPostedItinerary = useRef(undefined);
+  const lastPostedBudget = useRef(undefined);
   const setters = useRef({});
-  setters.current = { setVotes, setComments, setBaseId, setItinerary, setPresence, setRecentLog, setSharedMeta };
+  setters.current = { setVotes, setComments, setBaseId, setItinerary, setBudgetOverrides, setPresence, setRecentLog, setSharedMeta };
 
   // ── GET helper ──
   // `forceAdoptShared` bypasses the simulation-mode guard for shared.baseId
@@ -174,6 +176,15 @@ export const useTripSync = ({ state, enabled = true }) => {
       const remoteItAt = data.shared?.itineraryUpdatedAt ? new Date(data.shared.itineraryUpdatedAt).getTime() : 0;
       if (adoptShared && remoteItAt && (forceAdoptShared || remoteItAt > lockUntil.current.itinerary) ) {
         s.setItinerary(data.shared.itinerary || {});
+      }
+
+      // shared.budget — same LWW with sim-mode guard. Note: budget overrides
+      // sync regardless of simulationMode if the user wasn't editing them
+      // locally, because they're family-shared assumptions; but for
+      // consistency with base/itinerary we keep the same gate.
+      const remoteBudAt = data.shared?.budgetUpdatedAt ? new Date(data.shared.budgetUpdatedAt).getTime() : 0;
+      if (adoptShared && remoteBudAt && (forceAdoptShared || remoteBudAt > lockUntil.current.budget)) {
+        s.setBudgetOverrides(data.shared.budget || {});
       }
 
       readyRef.current = true;
@@ -262,6 +273,31 @@ export const useTripSync = ({ state, enabled = true }) => {
     }, POST_DEBOUNCE_MS);
     return () => globalThis.clearTimeout(t);
   }, [itinerary, selfMemberId, enabled, simulationMode]);
+
+  // ── POST: budgetOverrides (shared family assumptions) ──
+  // Same LWW pattern as base / itinerary. The simulation guard mirrors the
+  // shared-fields gate so sandboxed plans don't leak budget tweaks either.
+  useEffect(() => {
+    if (!enabled || !selfMemberId || !readyRef.current) return undefined;
+    if (simulationMode) return undefined;
+    const sig = JSON.stringify(budgetOverrides || {});
+    if (sig === JSON.stringify(lastPostedBudget.current || {})) return undefined;
+    const t = globalThis.setTimeout(async () => {
+      lastPostedBudget.current = budgetOverrides;
+      lockUntil.current.budget = Date.now() + POST_LOCK_MS;
+      try {
+        setStatus("syncing");
+        const data = await post({ kind: "shared", memberId: selfMemberId, patch: { budget: budgetOverrides || {} } });
+        setters.current.setSharedMeta((m) => ({
+          ...m,
+          budgetUpdatedBy: data.shared?.budgetUpdatedBy ?? m.budgetUpdatedBy,
+          budgetUpdatedAt: data.shared?.budgetUpdatedAt ?? m.budgetUpdatedAt,
+        }));
+        setStatus("ok"); setLastSyncedAt(new Date());
+      } catch (e) { setStatus("error"); if (typeof globalThis.console !== "undefined") globalThis.console.warn("sync (POST budget) failed:", e); }
+    }, POST_DEBOUNCE_MS);
+    return () => globalThis.clearTimeout(t);
+  }, [budgetOverrides, selfMemberId, enabled, simulationMode]);
 
   // ── POST: my comments (one POST per changed activity) ──
   useEffect(() => {

@@ -54,6 +54,8 @@ export const useTripState = () => {
     baseUpdatedAt: null,
     itineraryUpdatedBy: null,
     itineraryUpdatedAt: null,
+    budgetUpdatedBy: null,
+    budgetUpdatedAt: null,
   });
 
   // Members are the fixed family roster, not editable per-browser.
@@ -241,7 +243,7 @@ export const useTripState = () => {
     assignActivity, unassignActivity, insertActivity, moveActivityInDay,
     applyProfile,
     simulationMode, setSimulationMode,
-    budgetOverrides, setBudgetField,
+    budgetOverrides, setBudgetOverrides, setBudgetField,
     savedTick,
     buildShareUrl, resetAll,
   };
