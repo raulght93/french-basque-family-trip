@@ -37,7 +37,11 @@ export const useTripState = () => {
   const [votes, setVotes] = useLocalStorage(K("votes"), {}); // { activityId: [memberId,...] }
   const [startDateISO, setStartDateISO] = useLocalStorage(K("startDate"), DEFAULT_START);
   const [nights, setNights] = useLocalStorage(K("nights"), DEFAULT_NIGHTS);
-  const [cars, setCars] = useLocalStorage(K("cars"), 1);
+  const [cars, setCars] = useLocalStorage(K("cars"), 2);
+  // Tracks one-shot data migrations already applied in this browser, so we
+  // can bump older default values without re-applying after the user has
+  // overridden them. Each entry is a stable migration id.
+  const [appliedMigrations, setAppliedMigrations] = useLocalStorage(K("mig"), []);
   const [itinerary, setItinerary] = useLocalStorage(K("itinerary"), {});
   const [budgetOverrides, setBudgetOverrides] = useLocalStorage(K("budget"), {});
 
@@ -56,6 +60,8 @@ export const useTripState = () => {
     itineraryUpdatedAt: null,
     budgetUpdatedBy: null,
     budgetUpdatedAt: null,
+    carsUpdatedBy: null,
+    carsUpdatedAt: null,
   });
 
   // Members are the fixed family roster, not editable per-browser.
@@ -86,6 +92,17 @@ export const useTripState = () => {
       setStartDateISO(DEFAULT_START);
       if (nights !== DEFAULT_NIGHTS) setNights(DEFAULT_NIGHTS);
     }
+
+    // One-shot migration: family has 2 cars (the previous default of 1 was
+    // the React placeholder). Guarded by `appliedMigrations` so it won't
+    // re-bump if the user later picks 1 explicitly.
+    const applied = new Set(appliedMigrations || []);
+    const pending = [];
+    if (!applied.has("cars_default_2") && cars === 1) {
+      setCars(2);
+      pending.push("cars_default_2");
+    }
+    if (pending.length) setAppliedMigrations([...(appliedMigrations || []), ...pending]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -53,7 +53,7 @@ export const PrintView = ({ state }) => {
     <div data-print="expand" style={{ maxWidth: 800, margin: "0 auto", fontFamily: fonts.sans, color: colors.text, padding: "10px" }}>
       <h1 style={{ fontFamily: fonts.serif, fontSize: "28px", marginBottom: "4px" }}>{state.tripName}</h1>
       <div style={{ fontSize: "13px", color: colors.textMuted }}>
-        {formatDate(state.startDate)} → {formatDate(state.endDate)} · {state.nights} noches · {state.travelers} viajeros{state.cars > 1 ? ` · ${state.cars} coches` : ""}
+        {formatDate(state.startDate)} → {formatDate(state.endDate)} · {state.nights} noches · {state.travelers} viajeros · {state.cars} coche{state.cars === 1 ? "" : "s"}
       </div>
 
       {/* Base */}

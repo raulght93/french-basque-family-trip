@@ -149,7 +149,7 @@ export const Header = ({ state, size }) => {
           <NightStepper nights={state.nights} setNights={state.setNights} />
           <span>🏠 {baseLabel}</span>
           {!size.isMobile && (
-            <span>👥 {state.travelers}{state.cars > 1 ? ` · 🚗 ${state.cars}` : ""}</span>
+            <span>👥 {state.travelers} · 🚗 {state.cars}</span>
           )}
         </div>
       </div>

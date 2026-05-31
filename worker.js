@@ -65,6 +65,9 @@ const empty = () => ({
     budget: {},
     budgetUpdatedBy: null,
     budgetUpdatedAt: null,
+    cars: null,
+    carsUpdatedBy: null,
+    carsUpdatedAt: null,
   },
   presence: {},
   log: [],
@@ -209,6 +212,16 @@ async function handlePost(request, url, env) {
       state.shared.budgetUpdatedAt = now;
       if (changedKeys.length > 0) {
         prependLog(state, { ts: now, memberId, kind: "budget", summary: `Ajustó el presupuesto (${changedKeys.join(", ")})` });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "cars")) {
+      const n = patch.cars;
+      if (typeof n === "number" && Number.isFinite(n) && n >= 1 && n <= 20 && state.shared.cars !== n) {
+        const prev = state.shared.cars;
+        state.shared.cars = n;
+        state.shared.carsUpdatedBy = memberId;
+        state.shared.carsUpdatedAt = now;
+        prependLog(state, { ts: now, memberId, kind: "cars", summary: `Ahora viajáis con ${n} coche${n === 1 ? "" : "s"}${prev != null ? ` (antes ${prev})` : ""}` });
       }
     }
   }

@@ -60,11 +60,13 @@ export const AUTO_ITEMS = [
   { id: "efectivo", category: "documentos", label: "Algo de efectivo en euros + tarjetas" },
 
   // ── Coche y ruta ──
-  { id: "doc_coche", category: "coche", label: "Documentación del coche, ITV y seguro al día", cars: true },
-  { id: "seguro_asistencia", category: "coche", label: "Asistencia en carretera con cobertura en Francia", cars: true },
-  { id: "kit_coche", category: "coche", label: "Chaleco reflectante y triángulos (obligatorios en Francia)", cars: true },
+  { id: "doc_coche", category: "coche", label: "Documentación del coche, ITV y seguro al día" },
+  { id: "seguro_asistencia", category: "coche", label: "Asistencia en carretera con cobertura en Francia" },
+  { id: "kit_coche", category: "coche", label: "Chaleco reflectante y triángulos (obligatorios en Francia)" },
+  { id: "peajes_combustible", category: "coche", label: "Plan de peajes y repostaje (autopista AP-8 / A63)" },
+  // Solo tiene sentido cuando se viaja en convoy.
   { id: "repartir_coches", category: "coche", label: "Repartir plazas y conductores entre coches", cars: true },
-  { id: "peajes_combustible", category: "coche", label: "Plan de peajes y repostaje (autopista AP-8 / A63)", cars: true },
+  { id: "ruta_encuentro", category: "coche", label: "Punto de encuentro / parada acordada si os separáis", cars: true },
   { id: "navegador_offline", category: "coche", label: "Mapas offline / navegador con la zona descargada" },
 
   // ── Equipaje ──

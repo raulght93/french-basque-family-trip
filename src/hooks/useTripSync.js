@@ -106,6 +106,7 @@ export const useTripSync = ({ state, enabled = true }) => {
     baseId, setBaseId,
     itinerary, setItinerary,
     budgetOverrides, setBudgetOverrides,
+    cars, setCars,
     setPresence, setRecentLog, setSharedMeta,
     simulationMode = false,
   } = state;
@@ -120,14 +121,15 @@ export const useTripSync = ({ state, enabled = true }) => {
 
   // Refs to coordinate state across effects without dep-array gymnastics.
   const readyRef = useRef(false);
-  const lockUntil = useRef({ votes: 0, baseId: 0, itinerary: 0, comments: 0, budget: 0 });
+  const lockUntil = useRef({ votes: 0, baseId: 0, itinerary: 0, comments: 0, budget: 0, cars: 0 });
   const lastPostedVotes = useRef("");
   const lastPostedComments = useRef("{}");
   const lastPostedBaseId = useRef(undefined);
   const lastPostedItinerary = useRef(undefined);
   const lastPostedBudget = useRef(undefined);
+  const lastPostedCars = useRef(undefined);
   const setters = useRef({});
-  setters.current = { setVotes, setComments, setBaseId, setItinerary, setBudgetOverrides, setPresence, setRecentLog, setSharedMeta };
+  setters.current = { setVotes, setComments, setBaseId, setItinerary, setBudgetOverrides, setCars, setPresence, setRecentLog, setSharedMeta };
 
   // ── GET helper ──
   // `forceAdoptShared` bypasses the simulation-mode guard for shared.baseId
@@ -185,6 +187,15 @@ export const useTripSync = ({ state, enabled = true }) => {
       const remoteBudAt = data.shared?.budgetUpdatedAt ? new Date(data.shared.budgetUpdatedAt).getTime() : 0;
       if (adoptShared && remoteBudAt && (forceAdoptShared || remoteBudAt > lockUntil.current.budget)) {
         s.setBudgetOverrides(data.shared.budget || {});
+      }
+
+      // shared.cars — number of cars in the family caravan. Same LWW. Only
+      // adopt when remote has a meaningful number (so legacy KV blobs
+      // without the field don't reset us to undefined).
+      const remoteCarsAt = data.shared?.carsUpdatedAt ? new Date(data.shared.carsUpdatedAt).getTime() : 0;
+      if (adoptShared && remoteCarsAt && typeof data.shared?.cars === "number"
+          && (forceAdoptShared || remoteCarsAt > lockUntil.current.cars)) {
+        s.setCars(data.shared.cars);
       }
 
       readyRef.current = true;
@@ -298,6 +309,28 @@ export const useTripSync = ({ state, enabled = true }) => {
     }, POST_DEBOUNCE_MS);
     return () => globalThis.clearTimeout(t);
   }, [budgetOverrides, selfMemberId, enabled, simulationMode]);
+
+  // ── POST: cars (family caravan size) ──
+  useEffect(() => {
+    if (!enabled || !selfMemberId || !readyRef.current) return undefined;
+    if (simulationMode) return undefined;
+    if (cars === lastPostedCars.current) return undefined;
+    const t = globalThis.setTimeout(async () => {
+      lastPostedCars.current = cars;
+      lockUntil.current.cars = Date.now() + POST_LOCK_MS;
+      try {
+        setStatus("syncing");
+        const data = await post({ kind: "shared", memberId: selfMemberId, patch: { cars } });
+        setters.current.setSharedMeta((m) => ({
+          ...m,
+          carsUpdatedBy: data.shared?.carsUpdatedBy ?? m.carsUpdatedBy,
+          carsUpdatedAt: data.shared?.carsUpdatedAt ?? m.carsUpdatedAt,
+        }));
+        setStatus("ok"); setLastSyncedAt(new Date());
+      } catch (e) { setStatus("error"); if (typeof globalThis.console !== "undefined") globalThis.console.warn("sync (POST cars) failed:", e); }
+    }, POST_DEBOUNCE_MS);
+    return () => globalThis.clearTimeout(t);
+  }, [cars, selfMemberId, enabled, simulationMode]);
 
   // ── POST: my comments (one POST per changed activity) ──
   useEffect(() => {

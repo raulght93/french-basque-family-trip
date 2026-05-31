@@ -78,6 +78,22 @@ export const computeTripAlerts = (state) => {
     }
   }
 
+  // Capacity: roughly 5 plazas por coche (4 + conductor) con maletas. Si la
+  // familia entera no cabe en los coches actuales, lo flagueamos.
+  const SEATS_PER_CAR = 5;
+  if (state.cars && state.members?.length) {
+    const needed = Math.ceil(state.members.length / SEATS_PER_CAR);
+    if (state.cars < needed) {
+      out.push({
+        id: "cars_capacity",
+        severity: "warn",
+        icon: "🚗",
+        title: `${state.cars} coche${state.cars === 1 ? "" : "s"} para ${state.members.length} personas`,
+        detail: `Contando 5 plazas por coche con maletas, harían falta al menos ${needed}.`,
+      });
+    }
+  }
+
   // Heavy drive days (one per offending day). Drive counted per UNIQUE
   // place visited so a day with multiple activities in the same town
   // doesn't double-count.
